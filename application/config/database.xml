@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<database>
+    <driver>mysql</driver>
+    <host>localhost</host>
+    <dbname>hcphp</dbname>
+    <user>root</user>
+    <pass></pass>
+    <prefix></prefix>
+    <encoding>utf-8</encoding>
+</database>
