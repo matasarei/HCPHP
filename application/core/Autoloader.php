@@ -3,12 +3,15 @@
  * HCPHP
  *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
- */ 
+ * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version    20141109
+ */
 
-spl_autoload_register('Autoloader::load');
+namespace core;
  
+spl_autoload_register('core\Autoloader::load');
+
 class Autoloader {
     
     /**
@@ -19,20 +22,47 @@ class Autoloader {
     
     private static $_paths = [];
     private static $_loaders = [];
-
-    public static function load($class) {
-        /*
-        foreach (self::$_paths as $path) {
-            $path = sprintf('%s/%s.php', $path, strtolower($class));
-            if (file_exists($path)) {
-                require_once($path);
-                return true;
-            }
+    
+    /**
+     * 
+     */
+    static function add($path, callable $callback) {
+        if (file_exists($path)) {
+            self::$_paths[] = $path;
+            self::$_loaders[] = $callback;
+        } else {
+            throw new \Exception("The specified path ({$path}) does not exists!", 1);
         }
-        return false;
-         * 
-         */
+    }
+    
+    /**
+     * 
+     */
+    static function addLoader($function) {
+        if (is_callable($function)) {
+            self::$_loaders[] = $function;
+        } else {
+            throw new \Exception("The value is not a function!", 1);       
+        }
+    }
+    
+    /**
+     * 
+     */
+    static function addPath($path) {
+        if (file_exists($path)) {
+            self::$_paths[] = $path;
+        } else {
+            throw new \Exception("The specified path ({$path}) does not exists!", 1);
+        }
+    } 
+    
+    /**
+     * 
+     */
+    public static function load($class) {
         foreach (self::$_paths as $index => $path) {
+            $class = str_replace('\\', '/', $class);
             $callback = self::$_loaders[$index];
             if ($callback($path, $class)) {
                 return true;
@@ -40,29 +70,4 @@ class Autoloader {
         }
         return false;
     }
-    
-    static function add($path, callable $callback) {
-        if (file_exists($path)) {
-            self::$_paths[] = $path;
-            self::$_loaders[] = $callback;
-        } else {
-            throw new Exception("The specified path ({$path}) does not exists!", 1);
-        }
-    }
-    
-    static function addLoader($function) {
-        if (is_callable($function)) {
-            self::$_loaders[] = $function;
-        } else {
-            throw new Exception("The value is not a function!", 1);       
-        }
-    }
-    
-    static function addPath($path) {
-        if (file_exists($path)) {
-            self::$_paths[] = $path;
-        } else {
-            throw new Exception("The specified path ({$path}) does not exists!", 1);
-        }
-    }    
 }

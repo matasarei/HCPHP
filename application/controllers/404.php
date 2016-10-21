@@ -1,22 +1,20 @@
 <?php
 /**
- * HCPHP
+ * 404 page
  *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/**
- * 
- */
+use core\Controller,
+    core\View;
+
 class Controller404 extends Controller {
     
-    function actionDefault() {
-        $data = array('title'=>'404: Page not found!');
-        
-        $view = new View('404/default');
-        $view->render($data);
+    public function actionDefault() {
+        $view = new View();
+        $view->display();
     }
     
 }

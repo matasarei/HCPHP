@@ -1,32 +1,41 @@
 <?php
 /**
  * HCPHP
- * Confguration
  *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
+ * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version    20141109
  */
- 
-class Config extends Object {
+
+namespace core;
+
+use core\Exception;
+
+/**
+ * 
+ */
+class Config {
     
     private $_vars = array();
+    private $_timemodified = 0;
+    private $_path;
     
-    function __construct($config, $vars) {
-        $path = new Path("application/config/{$config}.xml");
-        if (file_exists($path)) {
-            $config = simplexml_load_file($path);
-            foreach ($vars as $var => $default) {
-                if (is_numeric($var)) {
-                    $var = $default;
-                    $default = null;
-                }
-                $this->_set($config, $var, $default);
+    function __construct($config, array $vars) {
+        $path = new Path("application/config/{$config}.json", true);
+        $this->_path = $path;
+        
+        $config = json_decode(file_get_contents($path));
+        
+        $this->_timemodified = filemtime($path);
+        
+        foreach ($vars as $var => $default) {
+            if (is_numeric($var)) {
+                $var = $default;
+                $default = null;
             }
-        } else {
-            throw new Exception("config/{$config}.xml does not exists!", 1);
-            
-        }
+            $this->_set($config, $var, $default);
+        } 
     }
     
     /**
@@ -34,19 +43,28 @@ class Config extends Object {
      */
     private function _set($data, $name, $default = null) 
     {
-        if (isset($data->$name) && !empty($data->$name)) {
-            $value = (string)$data->$name;
-            if (is_numeric($value)) {
-                $value = (double)$value;
-            }
-            $this->_vars[$name] = $value;
+        if (isset($data->$name)) {
+            $this->_vars[$name] = $data->$name;
         } else if($default !== null) {
             $this->_vars[$name] = $default;
         } else {
-            throw new Exception("Can't set '{$name}'. Please check config file!", 1);
+            throw new Exception('e_config_val_undefined', 0, [$name, (string)$path]);
         }
     }
     
+    function getTimeModified() {
+        return $this->_timemodified;
+    }
+    
+    /**
+     * 
+     * @param type $name
+     * @param type $value
+     */
+    public function __set($name, $value) {
+        $this->_vars[$name] = $value;
+    }
+
     /**
      * Getter
      */
@@ -54,6 +72,5 @@ class Config extends Object {
         if (isset($this->_vars[$name])) {
             return $this->_vars[$name];
         }
-        return null;
     }
 }

@@ -1,6 +1,3 @@
-*.class
-*.pyc
-*.pyo
-*.class
-*.pyc
-*.pyo
+/.project
+/nbproject/*
+/cache/*

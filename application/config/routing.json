@@ -1,0 +1,32 @@
+{
+    "routes" : {
+        
+        "error_test": {
+            "controller": "index",
+            "action": "error"
+        },
+        
+        "forbidden_test": {
+            "controller": "index",
+            "action": "forbidden"
+        },
+        
+        "^test/html": {
+            "controller": "html",
+            "action": "test"
+        },
+        
+        "^test/1/2/$" : {
+            "controller": "index",
+            "action": "ParamsTest",
+            "params": [
+                "override", "params", "here"
+            ]
+        },
+         
+        "^test/(\\d)?" : {
+            "controller": "index",
+            "action": "RoutingTest"
+        }
+    }
+}

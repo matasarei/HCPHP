@@ -1,0 +1,9 @@
+{
+    "driver": "mysql",
+      "host": "localhost",
+    "dbname": "hcphp",
+      "user": "root",
+      "pass": "",
+    "prefix": "",
+  "encoding": "utf8"
+}

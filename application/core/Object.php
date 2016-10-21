@@ -3,14 +3,20 @@
  * HCPHP
  *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
+ * @subpackagу core
+ * @author     Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version    20161020
  */
+ 
+namespace core;
+
+use core\Exception;
 
 /**
  * Object
  */
-class Object {
+abstract class Object {
     
     function __set($name, $value)
     {
@@ -34,7 +40,7 @@ class Object {
     protected function _checkArg($arg, array $types) {
         if (!in_array(gettype($arg), $types, true)) {
             $msg = sprintf('Expects %s; %s given!', implode(', ' , $types), gettype($arg));
-            throw new InvalidArgumentException($msg, 1);
+            throw new Exception($msg, 1);
         }
     }
 }

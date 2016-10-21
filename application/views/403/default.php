@@ -1,1 +1,3 @@
-<h2>403: Access forbidden!</h2>
+<div class="well">
+    <h1>403: Access denided</h1>
+</div>

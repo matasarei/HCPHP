@@ -1,33 +1,31 @@
 <?php
 /**
  * HCPHP
- * 
+ *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
+ * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version    20141109
  */
- 
+
+namespace core;
+
 /**
  * 
  */
-class Controller extends Object {
+abstract class Controller extends Object {
     protected $_name;
     protected $_action;
-    
-	function __construct($name, $action) {
+    protected $_lang;
+            
+    function __construct($name, $action) {
+        Events::triggerEvent('onLoadController', array(
+            'name' => $name, 
+            'action' => $action
+        ));
         $this->_action = $action;
-        
-        $loader = function($path, $class) {
-            $class = preg_replace("/^model/ui", "", $class);
-            $path = sprintf('%s/%s.php', $path, strtolower($class));
-            if (file_exists($path)) {
-                require_once $path;
-                return true;
-            }
-            return false;
-        };
-        Autoloader::add(new Path("application/models"), $loader); 
-	}
+        //$this->_lang = Application::Language();
+    }
     
     function getAction() {
         return $this->_action;
@@ -36,5 +34,8 @@ class Controller extends Object {
     function getName() {
         return $this->_name;
     }
+    
+    function getLang() {
+        return $this->_lang;
+    }
 }
-

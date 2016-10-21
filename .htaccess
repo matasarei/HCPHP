@@ -1,10 +1,23 @@
+Options -Indexes
+
 <IfModule mod_rewrite.c>
 RewriteEngine on
+
+# Fix base directory
+#RewriteBase /path/to/root
+
+# Fix empty mod_rewrite value for FastCGI.
+SetEnv HTTP_MOD_REWRITE 'On'
+
+# Adds slash to the end of url.
+RewriteCond %{REQUEST_URI} !\..*$
+RewriteRule ^(.*)([^/])$ http://%{HTTP_HOST}/$1$2/ [L,R=301]
+
+# Rewrite request for MVC.
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
+RewriteRule ^(([a-z]{2})/)?(.*)$ index.php?q=$3&l=$2 [L,QSA]
+
+ErrorDocument 403 /403/
+ErrorDocument 404 /404/
+ErrorDocument 500 /500/
 </IfModule>
-
-RedirectMatch 403 ^(.*)application/*$
-RedirectMatch 403 ^(.*)data/(.*)$
-
-ErrorDocument 403 /403

@@ -2,56 +2,74 @@
 /**
  * HCPHP
  *
- * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
+ * @package hcphp
+ * @author Yevhen Matasar <matasar.ei@gmail.com>
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version 20150111
  */
- 
-/**
- * 
- */
-class View extends Object {
-	
-    private $_data;
-    private $_template;
-    private $_content;
+
+namespace core;
+
+class View extends Template {
     
-	function __construct($view) {
-	    $config = new Config('template', array('default'));
-        
-        $this->template = $config->default;
-        $this->_content = new Path("application/views/{$view}.php");
-        $this->_data = array();
-	}
+    protected $_layout;
     
-    function setTemplate($name) {
-        $path = new Path("application/templates/{$name}/");
-        if (!$path) {
-            throw new Exception("Template '{$name}' does not exist!", 1);
+    /**
+     * 
+     */
+    public function __construct($view = '', $layout = 'default') {
+        try {
+            if(!$view) {
+                $view = Application::getController() . '/' . Application::getAction();
+            }
+            $path = new Path("application/views/{$view}.php", true);
+            $this->_path = $path;
+        } catch (WrongPathException $e) {
+            throw new TemplateNotFoundException("View '{$view}' does not exist!");
         }
-        $this->_template = $path;
+        $this->_layout = new Template($layout);
+        $this->_template = $view;
     }
     
-    public function getData() {
-        return $this->_data;
+    /**
+     * 
+     */
+    public function getLayout() {
+        return $this->_layout;
     }
     
-    public function setData($data) {
-        $this->_checkArg($data, array('array', 'object'));
-        if (is_object($data)) {
-            $this->_data = (array)$data;
+    
+    /**
+     * 
+     */
+    public function setLayout($layout) {
+        if ($layout instanceof Template) {
+            $this->_layout = $layout;
         } else {
-            $this->_data = $data;
+            $this->_layout = new Template($layout);
         }
     }
     
-    public function render($data = array()) {
-        !$data && $data = $this->_data;
-        is_object($data) && $data = (array)$data;
-        extract($data, EXTR_OVERWRITE);
-        
-        include "{$this->_template}/header.php";
-        include $this->_content;
-        include "{$this->_template}/footer.php";
+    /**
+     * Makes view
+     */
+    public function make(array $data = null) {
+        $this->_layout->set('content', parent::make($data));
+        return $this->_layout->make();
     }
+    
+    /**
+     * Display view and exit application (optional)
+     * @param array $data template data
+     * @param bool $end exit application
+     */
+    public function display(array $data = null, $end = true) {
+        Events::triggerEvent('onDisplayView', [
+            'view' => $this
+        ]);
+        
+        echo $this->make($data);
+        $end && exit();
+    }
+    
 }

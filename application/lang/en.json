@@ -1,0 +1,9 @@
+{
+    "e_route_controller_undefined": "Controller is undefined for route %s",
+    "e_config_val_undefined" : "Undefined value %s in config %s",
+    "e_database_instance_exist": "Database %s is already registered",
+    "e_undefined_table_name": "Undefined table name",
+    "e_uncompatible_database_instance": "Uncompatible database type",
+    
+    "title" : "Welcome to %s!"
+}

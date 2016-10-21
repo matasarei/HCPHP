@@ -1,18 +1,20 @@
 <?php
 /**
- * HCPHP
+ * Init script
  *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar (matasar.ei@gmail.com)
- * @license    
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version    20160526
  */
-if (version_compare(phpversion(), '5.5.0', '<')) {
-     die('Requires PHP > 5.5'); 
-}
 
-define('HCPHP', true);
-require_once __DIR__ . '/core/autoloader.php';
+require_once __DIR__ . '/core/Autoloader.php';
 
+use core\Autoloader;
+
+///
+// init autoloader.
+///
 $loader = function($path, $class) {
     $path = "{$path}/{$class}.php";
     if (file_exists($path)) {
@@ -21,10 +23,35 @@ $loader = function($path, $class) {
     }
     return false;
 };
-
-Autoloader::add(__DIR__ . '/core/', $loader);
+Autoloader::add(__DIR__, $loader);
 Autoloader::add(__DIR__ . '/lib/', $loader);
 
-Debug::init();
+use core\Application,
+    core\Debug,
+    core\Path,
+    core\Config,
+    core\Globals;
+
+// init cli request.
+if (php_sapi_name() === 'cli') {
+    Application::initCLI($argv);
+}
+
+// init debug.
+Debug::init(E_ALL);
+// init path (set root dir).
 Path::init(dirname(__DIR__));
-Session::init();
+// init globals interface.
+Globals::init();
+
+// init debug.
+$default = new Config('default', array('debug' => 0));
+$default->debug = is_numeric($default->debug) ? $default->debug : constant($default->debug);
+Debug::mode($default->debug);
+
+///
+// global functions.
+///
+function x($var) {
+    Debug::dump($var, true, debug_backtrace());
+}
