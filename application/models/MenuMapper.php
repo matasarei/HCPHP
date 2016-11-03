@@ -28,7 +28,7 @@ class MenuMapper implements iMapper {
      * @return array data
      * @throws Exception
      */
-    public function fetchWith(array $conditions, array $params = array()) {
+    public function fetchWith(array $conditions, array $params = []) {
         if (empty($conditions['id'])) {
             throw new Exception('e_instance_id_required');
         }

@@ -17,11 +17,20 @@ use core\Exception;
 
 class Template extends Object {
 
-    protected $_data = array();
+    protected $_data = [];
     protected $_path;
     protected $_template;
-    private static $_shortcodes = array();
-    private static $_filters = array();
+    private static $_shortcodes = [];
+    private static $_filters = [];
+    protected $_useShortcodes = true;
+    
+    /**
+     * 
+     * @param type $val
+     */
+    public function setUseShortcode($val) {
+        $this->_useShortcodes = (bool)$val;
+    }
     
     /**
      * 
@@ -80,10 +89,10 @@ class Template extends Object {
         if (isset($this->_data[$name])) {
             $current = $this->_data[$name];
             if (!is_array($current)) {
-                $newval = array($current);
+                $newval = [$current];
             }
         } else {
-            $newval = array();
+            $newval = [];
         }
         $index ? $newval[$index] = $value : $newval[] = $value;
         $this->_data[$name] = $newval;
@@ -153,12 +162,16 @@ class Template extends Object {
         // remove comments.
         $contents = preg_replace("/\{\*.*\*\}/Uus", "", (string)$contents, -1);
         
-        // fetch all shortcodes.
-        preg_match_all("/{{\s*(.*)\s*}}/Uus", $contents, $matches, PREG_SET_ORDER, 0);
         
-        // explode to lines.
-        $lines = preg_split("/\n/", $contents, -1, null);
-        
+        $matches = [];
+        if ($this->_useShortcodes) {
+            // fetch all shortcodes.
+            preg_match_all("/{{\s*(.*)\s*}}/Uus", $contents, $matches, PREG_SET_ORDER, 0);
+            
+            // explode to lines.
+            $lines = preg_split("/\n/", $contents, -1, null);
+        }
+
         // process each shortcode.
         foreach ($matches as $match) {
             $pattern = '#' . preg_quote($match[0]) . '#';

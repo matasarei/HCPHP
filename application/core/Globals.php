@@ -130,7 +130,7 @@ class Globals {
      * @param array $vars
      */
     public static function getFew(array $vars) {
-        $return = array();
+        $return = [];
         foreach ($vars as $name => $default) {
             $return[$name] = self::optional($name, $default);
         }
@@ -141,12 +141,12 @@ class Globals {
         if (isset($_FILES[$name])) {
             return $_FILES[$name];
         }
-        return array(
+        return [
             "name" => null,
             "type" => null,
             "tmp_name" => null,
             "error" => UPLOAD_ERR_NO_FILE,
             "size" => 0
-        );
+        ];
     }
 }

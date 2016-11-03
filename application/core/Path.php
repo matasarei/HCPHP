@@ -3,9 +3,9 @@
  * HCPHP
  *
  * @package    hcphp
- * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
+ * @copyright  2016 Yevhen Matasar <matasar.ei@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20141109
+ * @version    20161103
  */
 
 namespace core;
@@ -88,6 +88,14 @@ class Path extends Object {
     }
     
     /**
+     * Get file URL
+     * @return \core\Url
+     */
+    function getUrl() {
+        return new Url($this->_path);
+    }
+    
+    /**
      * Init static class
      * @param type $value Root path
      * @throws Exception Wrong path exeption
@@ -114,6 +122,7 @@ class Path extends Object {
     
     /**
      * 
+     * @return type
      */
     public function getExtension() {
         return pathinfo((string)$this, PATHINFO_EXTENSION);

@@ -76,7 +76,7 @@ class Html extends Xml {
      * @param type $attributes
      * @return type
      */
-    public static function htmlList(array $items, $type = 'ul', $attributes = array()) {
+    public static function htmlList(array $items, $type = 'ul', $attributes = []) {
         $html = '';
         foreach ($items as $key => $item) {
             if (is_array($item)) {

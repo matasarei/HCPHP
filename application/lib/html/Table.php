@@ -19,11 +19,11 @@ use core\Object,
  */
 class Table extends Object {
     
-    private $_head = array();
-    private $_data = array();
+    private $_head = [];
+    private $_data = [];
     private $_caption;
     private $_uniqStyles = 2;
-    private $_attributes = array();
+    private $_attributes = [];
     
     /**
      * 
@@ -158,7 +158,7 @@ class Table extends Object {
         $tbody = '';
         $styles = 1;
         foreach($this->_data as $row) {
-            $attributes = array('class'=>"r{$styles}");
+            $attributes = ['class'=>"r{$styles}"];
             $tbody .= Html::tag('tr', $this->makeRow($row, 'td', $attributes));
             ++$styles && $styles > $this->_uniqStyles && $styles = 1;
         }

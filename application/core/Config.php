@@ -17,7 +17,7 @@ use core\Exception;
  */
 class Config {
     
-    private $_vars = array();
+    private $_vars = [];
     private $_timemodified = 0;
     private $_path;
     

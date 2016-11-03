@@ -45,7 +45,7 @@ Path::init(dirname(__DIR__));
 Globals::init();
 
 // init debug.
-$default = new Config('default', array('debug' => 0));
+$default = new Config('default', ['debug' => 0]);
 $default->debug = is_numeric($default->debug) ? $default->debug : constant($default->debug);
 Debug::mode($default->debug);
 

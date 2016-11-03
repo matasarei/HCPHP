@@ -18,8 +18,8 @@ class Xml {
     private function __construct() { }
     private function __clone() { }
     
-    static function tag($name, $content = null, $attribs = array()) {
-        $string = array("<{$name}");
+    static function tag($name, $content = null, $attribs = []) {
+        $string = ["<{$name}"];
         //attribs
         if ($attribs) {
             array_push($string, " ", self::_makeAttribs($attribs));
@@ -39,7 +39,7 @@ class Xml {
      * @return type
      */
     protected static function _makeAttribs($attribs) {
-        $string = array();
+        $string = [];
         foreach ($attribs as $name => $value) {
             if (empty($value)) {
                 $string[] = " {$name} ";

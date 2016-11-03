@@ -19,10 +19,10 @@ abstract class Controller extends Object {
     protected $_lang;
             
     function __construct($name, $action) {
-        Events::triggerEvent('onLoadController', array(
+        Events::triggerEvent('onLoadController', [
             'name' => $name, 
             'action' => $action
-        ));
+        ]);
         $this->_action = $action;
         //$this->_lang = Application::Language();
     }

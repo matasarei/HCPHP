@@ -242,6 +242,22 @@ class Application {
         exit;
     }
     
+    /**
+     * Send response or request to specified URI
+     * @param array $data Assoc data array
+     * @param \core\Url $uri Handler URI
+     * @return Request result
+     */
+    static function sendData(array $data, $uri = null) {
+        if ($uri) {
+            $url = new Url($uri, $data);
+            return file_get_contents($url);
+        }
+        header('Content-type: application/json');
+        echo json_encode($data);
+        exit();
+    }
+    
     const REDIRECT_MOVED = 301;
     const REDIRECT_TEMPORARY = 302;
     

@@ -23,7 +23,7 @@ class Debug {
     
     private static $_mode = 0;
     
-    private static $_dump = array();
+    private static $_dump = [];
     
     /**
      * Please use php constants (E_ALL, E_NOTICE...)
