@@ -11,7 +11,7 @@ SetEnv HTTP_MOD_REWRITE 'On'
 
 # Adds slash to the end of url.
 RewriteCond %{REQUEST_URI} !\..*$
-RewriteRule ^(.*)([^/])$ http://%{HTTP_HOST}/$1$2/ [L,R=301]
+RewriteRule ^(.*)([^/])$ %{REQUEST_SCHEME}://%{HTTP_HOST}/$1$2/ [L,R=301]
 
 # Rewrite request for MVC.
 RewriteCond %{REQUEST_FILENAME} !-f

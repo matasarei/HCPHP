@@ -65,9 +65,9 @@ class Application {
         $config = new Config('default', ['lang' => 'en']);
         
         // get request.
-        $url = filter_var(Globals::optional('q'), FILTER_SANITIZE_URL);
-        $request = $url ? preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY) : [];
-        
+        $url = preg_replace("@(^\/+|(\/)\/+)@", "$2", filter_var(Globals::optional('q'), FILTER_SANITIZE_URL), -1);
+	$request = $url ? preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY) : [];
+
         // init language.
         $lang = empty($_REQUEST['l']) ? $config->lang : $_REQUEST['l'];
         try {
@@ -83,7 +83,7 @@ class Application {
         }
         
         // search in manual configurated routes.
-        if (!self::_findRoute(Globals::optional('q'))) {
+        if (!self::_findRoute($url)) {
             // if not found, setup automatically.
             self::_autoRoute($request);
         }
