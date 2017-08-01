@@ -348,24 +348,29 @@ class Application {
      * @return string IP address
      */
     static function getIP() {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $ip = "127.0.0.1";
+        $ip = "127.0.0.1";
+	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $host = gethostname();
             return $host ? gethostbyname($host) : $ip;
         }
-        return exec("ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'");
+        return exec("ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '{$ip}'");
     }
+
+	
     
     /**
      * Check mod_rewrite support
      * @return type
      */
     static function modRewrite() {
-        if (function_exists('apache_get_modules')) {
+	if (function_exists('apache_get_modules')) {
             $modules = apache_get_modules();
             return in_array('mod_rewrite', $modules);
         } else {
-            return getenv('HTTP_MOD_REWRITE') == 'On' ? true : false;
+            if (preg_match("/nginx/", filter_input(INPUT_SERVER, 'SERVER_SOFTWARE'))) {
+                return true;
+            }
+            return getenv('HTTP_MOD_REWRITE') == 'On';
         }
     }
 }
