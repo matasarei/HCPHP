@@ -1,0 +1,20 @@
+version: "3"
+services:
+
+  nginx:
+    build: docker/nginx
+    ports:
+          - 8080:80
+    volumes:
+      - ./var/log/nginx:/var/log/nginx
+      - ./:/var/www/html
+
+    links:
+      - fpm
+    depends_on:
+      - fpm
+
+  fpm:
+    build: docker/fpm
+    volumes:
+      - ./:/var/www/html

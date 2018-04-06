@@ -1,3 +1,5 @@
-/.project
-/nbproject/*
-/cache/*
+.project
+.idea
+nbproject
+cache
+var
