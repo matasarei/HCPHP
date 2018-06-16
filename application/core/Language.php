@@ -1,35 +1,32 @@
 <?php
-/**
- * HCPHP
- *
- * @package    hcphp
- * @copyright  2015 Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20150107
- */
+
 
 namespace core;
 
 /**
- * 
+ * Translations
+ *
+ * @package    hcphp
+ * @copyright  2015 Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class Language {
     
-    /**
-     * Default language code
-     * @var string
-     */
+    /** @var string Default language code */
     protected static $_default = 'en';
     
-    /**
-     *
-     * @var array Strings
-     */
+    /** @var array Phrases */
     protected static $_strings = [];
     
+    /** @var string Current language code ISO 693-1 */
+    protected $_code;
+    
+    /** @var array Phrases for current language code */
+    protected $_current;
+    
     /**
-     * 
-     * @param type $lang
+     * Set default language code
+     * @param string $lang
      */
     public static function setDefault($lang) {
         static::$_default = (string)$lang;
@@ -37,7 +34,7 @@ class Language {
     }
     
     /**
-     * 
+     * Get default language 
      * @return type
      */
     public static function getDefault() {
@@ -45,64 +42,43 @@ class Language {
     }
     
     /**
-     * 
+     * Load phrases
      * @param type $lang
      */
     protected static function _loadStrings($lang) {
         if (empty(static::$_strings[$lang])) {
             $path = new Path("application/lang/{$lang}.json", true);
             $strings = json_decode(file_get_contents($path));
-            if (!$strings) {
+            if (empty($strings)) {
                 throw new \Exception('Wrong file format or file is corrupted', 1);
             }
             static::$_strings[$lang] = $strings;
         }
     }
-    
-    /**
-     * Current language code
-     * @var type 
-     */
-    protected $_code;
-    
-    /**
-     * Strings for current language code
-     * @var type 
-     */
-    protected $_current;
 
     /**
-     * 
+     * @param string $lang Language ISO code (optional)
      */
     public function __construct($lang = null) {
-        $this->setLanguage($lang ? $lang : self::$_default);
+        $this->setCode($lang ? $lang : self::$_default);
     }
     
     /**
-     * 
-     * @param type $name
-     * @return type
+     * Magit getter
+     * @param string $name phrase name
+     * @return string Phrase
      */
     public function __get($name) {
-        return $this->getString($name);
+        return $this->getPhrase($name);
     }
     
     /**
-     * 
-     * @param type $name
-     * @param type $value
+     * Set phrase
+     * @param string $name Prase name
+     * @param string $value Prase
+     * @param boolean $global Set global (affects all instances)
      */
-    public function __set($name, $value) {
-        $this->setString($name, $value);
-    }
-    
-    /**
-     * 
-     * @param type $name
-     * @param type $value
-     * @param type $global
-     */
-    public function setString($name, $value, $global = false) {
+    public function setPhrase($name, $value, $global = false) {
         $this->_current->$name = (string)$value;
         if ($global) {
             static::$_strings[$this->_code]->$name = $this->_current->$name;
@@ -110,12 +86,12 @@ class Language {
     }
 
     /**
-     * 
-     * @param type $name
-     * @param array $args
-     * @return type
+     * Get phrase
+     * @param string $name Phrase name
+     * @param array $args sprintf arguments
+     * @return string Phrase
      */
-    public function getString($name, array $args = []) {
+    public function getPhrase($name, array $args = []) {
         if (empty($this->_current->$name)) {
             trigger_error("String '{$name}' in '{$this->_code}' does not exist");
             return "%{$name}%";
@@ -128,10 +104,10 @@ class Language {
     }
     
     /**
-     * Language code
+     * Set language code
      * @param string $code
      */
-    public function setLanguage($code) {
+    public function setCode($code) {
         $name = (string)$code;
         static::_loadStrings($name);
         $this->_current = static::$_strings[$name];
@@ -139,10 +115,10 @@ class Language {
     }
     
     /**
-     * 
+     * Get language code
      * @return type
      */
-    public function getLanguage() {
+    public function getCode() {
         return $this->_code;
     }
     
@@ -156,12 +132,15 @@ class Language {
     }
     
     /**
-     * @param type $name String name
-     * @param type $args String args
-     * @param type $lang Language code (optional)
+     * Get phrase (static alt to getPhrase)
+     * @param string $name String name
+     * @param array $args String args
+     * @param string $lang Language code (optional)
      */
-    static function string($name, $args = [], $lang = null) {
-        !$lang && $lang = self::$_default;
+    static function phrase($name, $args = [], $lang = null) {
+        if (empty($lang)) {
+            $lang = self::$_default;
+        }
         
         if (empty(self::$_strings[$lang])) {
             self::_loadStrings($lang);
@@ -191,7 +170,7 @@ Template::addShortcode('lang', function($params, $info) {
         $params[1] = preg_replace($quotesPattern, "$1", $params[1], -1);
     }
     
-    $return = "<?php echo \core\Language::string('{$params[1]}'";
+    $return = "<?php echo \core\Language::phrase('{$params[1]}'";
     
     // string args.
     if (empty($params[2])) {

@@ -1,51 +1,102 @@
 <?php
+
+namespace core;
+
+use core\Exception;
+
 /**
- * HCPHP
+ * HCPHP Application instance (static class)
  *
  * @package    hcphp
  * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20161020
  */
-
-namespace core;
-
-use core\Exception,
-    core\Globals;
-
-class Application {
+class Application 
+{    
+    // Modes.
+    const MODE_DEFAULT = 'default';
+    const MODE_XHR = 'xhr';
+    const MODE_CLI = 'cli';
     
-    /**
-     * Satic only
+    // Responses.
+    const STATUS_DEFAULT = 200;
+    const STATUS_CREATED = 201;
+    const STATUS_ACCEPTED = 202;
+    
+    // Redirects.
+    const REDIRECT_MOVED = 301;
+    const REDIRECT_FOUND = 302;
+    const REDIRECT_TEMPORARY = 307;
+    
+    // Errors.
+    const ERROR_BAD_REQUEST = 400;
+    const ERROR_UNAUTHORIZED = 401;
+    const ERROR_FORBIDDEN = 403;
+    const ERROR_NOT_FOUND = 404;
+    const ERROR_WRONG_METHOD = 405;
+    const ERROR_INTERNAL = 500;
+    const ERROR_NOT_IMPLEMENTED = 501;
+    
+    /** 
+     * @var array Status message list 
      */
-    private function __construct() {}
-    private function __clone() {}
+    private static $_messages = [
+        200 => "200 OK",
+        201 => "201 Created",
+        202 => "202 Accepted",
+        301 => "301 Moved Permanently",
+        302 => "302 Found",
+        307 => "307 Temporary Redirect",
+        400 => "400 Bad request",
+        401 => "401 Unauthorized",
+        403 => "403 Forbidden",
+        404 => "404 Not Found",
+        405 => "405 Method Not Allowed",
+        500 => "500 Internal Server Error",
+        501 => "501 Not Implemented"
+    ];
+    
+    /** @var string */
+    static $_mode = self::MODE_DEFAULT;
+    
+    // Static only.
+    private function __construct()
+    {
+    }
+    
+    private function __clone() 
+    {
+    }
     
     /**
-     * Controller name
+     * Current controller name
      * @var string 
      */
     private static $_controller = null;
     
     /**
      * Returns controller name
-     * @return type
+     * 
+     * @return string
      */
-    public static function getController() {
+    public static function getController() 
+    {
         return self::$_controller;
     }
     
     /**
-     * Actions name
+     * Current action name
      * @var string
      */
     private static $_action = null;
     
     /**
      * Returns action name
-     * @return type
+     * 
+     * @return string
      */
-    public static function getAction() {
+    public static function getAction() 
+    {
         return self::$_action;
     }
     
@@ -58,20 +109,26 @@ class Application {
     /**
      * Start application
      */
-    static function start() {
-        Events::triggerEvent('onInit');
-        
+    static function start() 
+    {
         // load config.
         $config = new Config('default', ['lang' => 'en']);
         
         // get request.
         $url = preg_replace("@(^\/+|(\/)\/+)@", "$2", filter_var(Globals::optional('q'), FILTER_SANITIZE_URL), -1);
-	$request = $url ? preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY) : [];
+        $request = empty($url) ? [] : preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY);
 
-        // init language.
-        $lang = empty($_REQUEST['l']) ? $config->lang : $_REQUEST['l'];
+        // trigger init event.
+        Events::triggerEvent('Init', [
+            'config' => $config,
+            'url' => &$url,
+            'request' => &$request
+        ]);
+        
+        // init .
+        $lang = Globals::optional('l', $config->lang);
         try {
-            Language::setDefault($lang);
+            Language::setDefau-lt($lang);
         } catch (Exception $e) {
             if (Debug::isOn()) {
                 trigger_error("Wrong language code! Can't load default language config ({$lang})");
@@ -88,7 +145,8 @@ class Application {
             self::_autoRoute($request);
         }
         
-        Events::triggerEvent('onStart', [
+        // application start event.
+        Events::triggerEvent('Start', [
             'controller' => self::$_controller,
             'action'     => self::$_action,
             'params'     => self::$_params
@@ -107,10 +165,13 @@ class Application {
     
     /**
      * Find preconfigured route
+     * 
      * @param string $request full request string
+     * 
      * @return boolean
      */
-    private static function _findRoute($request) {
+    private static function _findRoute($request) 
+    {
         $config = new Config('routing', ['routes']);
         $matches = [];
         
@@ -119,7 +180,7 @@ class Application {
             
             // check required fields.
             if (empty($route->controller)) {
-                throw new Exception('e_route_controller_undefined', 0, [$pattern]);
+                throw new Exception('e_undefined_controller', 0, [$pattern]);
             }
 
             // if request match route rule.
@@ -145,11 +206,14 @@ class Application {
     
     /**
      * Make params from request or route configuration
-     * @param type $params
-     * @param type $toExtract
+     * 
+     * @param array|string $params Prepared params or match pattern
+     * @param string $toExtract String to extract params from
+     * 
      * @return array Params
      */
-    private static function _makeParams($params, $toExtract = null) {
+    private static function _makeParams($params, $toExtract = null) 
+    {
         // if params is preconfigured. 
         if (is_array($params)) {
             return array_values($params);
@@ -161,11 +225,11 @@ class Application {
         }
         
         // prepare pattern.
-        $params = "%{$params}$%ui";
+        $pattern = "%{$params}$%ui";
         
         // extract params from string.
         $matches = [];
-        if (preg_match($params, $toExtract, $matches, null, 0)) {
+        if (preg_match($pattern, $toExtract, $matches, null, 0)) {
             unset($matches[0]);
             return array_values($matches);
         }
@@ -174,12 +238,15 @@ class Application {
     
     /**
      * Define destination automatically
+     * 
      * @param array $request Request params
      */
-    private static function _autoRoute(array $request) {
+    private static function _autoRoute(array $request) 
+    {
         // get controller, action, params.
         self::$_controller = !empty($request[0]) ? strtolower($request[0]) : 'index';
         self::$_action = !empty($request[1]) ? strtolower($request[1]) : 'default';
+        
         if (count($request) > 2) {
             for ($i = 2; $i < count($request); $i++) { 
                 self::$_params[] = $request[$i];
@@ -189,134 +256,160 @@ class Application {
     
     /**
      * Load current controller
+     * 
      * @return boolean
      */
-    private static function _loadController() {
+    private static function _loadController() 
+    {
         $path = new Path(sprintf('application/controllers/%s.php', self::$_controller));
+        
         if (file_exists($path)) {
             require_once $path;
             $controller = sprintf('Controller%s', self::$_controller);
             $action = sprintf('action%s', self::$_action);
+            
             if (class_exists($controller) && method_exists($controller, $action)) {
                 $controller = new $controller(self::$_controller, self::$_action);
                 call_user_func_array([$controller, $action], self::$_params);
+                
                 return true;
             }
         }
+        
         return false;
     }
     
-    const ERROR_FORBIDDEN = 403;
-    const ERROR_NOT_FOUND = 404;
-    const ERROR_INTERNAL = 500;
-    
     /**
+     * @param int $code Status code
      * 
-     * @param type $code
-     * @param type $message
+     * @param string $message Error message (optional)
      */
-    static function sendError($code = self::ERROR_INTERNAL, $message = null) {
-        if ($code == 403) {
-            $header = "403 Forbidden";
-        } elseif ($code == 404) {
-            $header = "404 Not Found";
-        } else {
-            $header = "500 Internal Server Error";
+    static function sendError($code = self::ERROR_INTERNAL, $message = null) 
+    {
+        $header = self::getMessage(intval($code));
+        
+        if (empty($header)) {
+            $header = $message;
         }
         
-        if ($message) {
-            self::$_params[0] = $message;
-        } else {
-            self::$_params[0] = null;
+        if (empty($message)) {
             $message = $header;
+            self::$_params[0] = null;
+        } else {
+            self::$_params[0] = $message;
         }
         
-        
-        header("HTTP/1.0 {$header}");
+        header("HTTP/1.1 {$header}");
         header("Status: {$header}");
         self::$_controller = $code;
         self::$_action = 'default';
+        
         if (!self::_loadController()) {
-            die($message);
+            exit($message);
         }
+        
         exit;
     }
     
     /**
      * Send response or request to specified URI
+     * 
      * @param array $data Assoc data array
      * @param \core\Url $uri Handler URI
+     * 
      * @return Request result
      */
-    static function sendData(array $data, $uri = null) {
+    static function sendData(array $data, $uri = null, $status = self::STATUS_DEFAULT) 
+    {
         if ($uri) {
             $url = new Url($uri, $data);
             return file_get_contents($url);
         }
+        
+        $header = self::getMessage(intval($status));
+        
+        if (!empty($header)) {
+            header("HTTP/1.1 {$header}");
+            header("Status: {$header}");
+        }
+        
         header('Content-type: application/json');
         echo json_encode($data);
         exit();
     }
     
-    const REDIRECT_MOVED = 301;
-    const REDIRECT_TEMPORARY = 302;
-    
     /**
      * Redirect to specific URL
-     * @param \core\Url $url URL
+     * 
+     * @param string $url Url
+     * 
+     * @param int $code Status code (REDIRECT STATUSES ONLY!)
      */
-    static function redirect($url, $code = self::REDIRECT_MOVED) {
+    static function redirect($url, $code = self::REDIRECT_MOVED) 
+    {
         if (!preg_match("/^\w*\:\/\//", $url)) {
             $url = new Url($url);
         }
-        
-        if ($code == self::REDIRECT_TEMPORARY) {
-            header('HTTP/1.1 302 Moved Temporarily');
-        } else {
-            header('HTTP/1.1 301 Moved Permanently');
-        }        
+
+        $header = self::getMessage($code);
+        header("HTTP/1.1 {$header}");
+        header("Status: {$header}");
         header("Location: {$url}");
         exit();
     }
     
-    const MODE_DEFAULT = 'default';
-    const MODE_AJAX = 'ajax';
-    const MODE_CLI = 'cli';
-    
     /**
-     *
-     * @var type 
-     */
-    static $_mode = self::MODE_DEFAULT;
-    
-    /**
+     * Get status message
      * 
-     * @param type $mode
+     * @param int $status
+     */
+    public static function getMessage($status) 
+    {
+        if (empty(self::$_messages[$status])) {
+            return null;
+        }
+        
+        return self::$_messages[$status];
+    }
+    
+    /**
+     * Set app mode
+     * 
+     * @param string $mode
+     * 
      * @return boolean
      */
-    static function setMode($mode) {
+    static function setMode($mode) 
+    {
         $reflection = new \ReflectionClass(__CLASS__);
+        
         if (!in_array($mode, $reflection->getConstants(), true)) {
             trigger_error("Wrong application mode '{$mode}'");
+            
             return false;
         }
+        
         return true;
     }
     
     /**
      * Get current application mode
-     * @return type
+     * 
+     * @return string
      */
-    static function getMode() {
+    static function getMode() 
+    {
         return static::$_mode;
     }
     
     /**
-     * Initialize CLI modes
-     * @param type $argv Array of arguments passed to script from the command line.
+     * Init CLI mode.
+     * 
+     * @param array $argv Array of arguments passed to script from command line.
      */
-    static function initCLI($argv) {
-        // The first argument $argv[0] is always the name that was used to run the script.
+    static function initCLI($argv) 
+    {
+        // The first argument $argv[0] is always current users name.
         !empty($argv[1]) && $_REQUEST['q'] = $argv[1];
         !empty($argv[2]) && $_REQUEST['l'] = $argv[2];
         self::setMode(self::MODE_CLI);
@@ -324,53 +417,154 @@ class Application {
     
     /**
      * Get remote (user) IP
+     * 
      * @return string IP address
      */
-    static function getRemoteIP() {
+    static function getRemoteIP() 
+    {
         $ip = "127.0.0.1";
-        $sources = ['HTTP_CLIENT_IP', 
-                    'HTTP_X_FORWARDED_FOR', 
-                    'HTTP_X_FORWARDED',
-                    'HTTP_FORWARDED_FOR',
-                    'HTTP_FORWARDED',
-                    'REMOTE_ADDR'];
+        $sources = [
+            'HTTP_CLIENT_IP', 
+            'HTTP_X_FORWARDED_FOR', 
+            'HTTP_X_FORWARDED',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR'
+        ];
         
-        foreach($sources as $source) {
+        foreach($sources as $source) {    
             if (getenv($source)) {
                 return getenv($source);
             }
         }
+        
         return $ip;
     }
     
     /**
      * Get application / server IP
+     * 
      * @return string IP address
      */
-    static function getIP() {
+    static function getIP() 
+    {
         $ip = "127.0.0.1";
-	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        
+	if (preg_match('/^win/i', PHP_OS)) {
             $host = gethostname();
+            
             return $host ? gethostbyname($host) : $ip;
         }
-        return exec("ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '{$ip}'");
+        
+        return exec(
+            sprintf(
+                join(' | ', [
+                    'ifconfig',
+                    'grep -Eo "inet (addr:)?([0-9]*\.){3}[0-9]*"',
+                    'grep -Eo "([0-9]*\.){3}[0-9]*"',
+                    "grep -v '%s'"
+                ]),
+                $ip
+            )
+        );
     }
-
-	
     
     /**
      * Check mod_rewrite support
-     * @return type
+     * 
+     * @return boolean
      */
-    static function modRewrite() {
+    static function modRewrite() 
+    {
 	if (function_exists('apache_get_modules')) {
             $modules = apache_get_modules();
+            
             return in_array('mod_rewrite', $modules);
         } else {
             if (preg_match("/nginx/", filter_input(INPUT_SERVER, 'SERVER_SOFTWARE'))) {
                 return true;
             }
+            
             return getenv('HTTP_MOD_REWRITE') == 'On';
         }
+        
+        return false;
+    }
+        
+    /**
+     * Get application host address (domain / ip)
+     * 
+     * @return strting
+     */
+    static function getHost() 
+    {
+        $host = filter_input(INPUT_SERVER, 'HTTP_HOST');
+        
+        return $host ? $host : getenv('SERVER_ADDR');
+    }
+    
+    /**
+     * Get previous page / action URL
+     * 
+     * @return \core\Url
+     */
+    static function backUrl() {
+        $url = new Url(filter_input(INPUT_SERVER, 'HTTP_REFERER'));
+        
+        if (self::getHost() === $url->getHost()) {
+            return $url;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 
+     * 
+     * @return int
+     */
+    
+    /**
+     * Get / set max upload filesize
+     * 
+     * @param null $val New upload filezise (in bytes)
+     * @param bool $raw Get raw value (in bytes), otherwise return size in.
+     * 
+     * @return int Current max filesize
+     */
+    static function maxUploadFilesize($val = null, $raw = false) 
+    {
+        $getKBytes = function($raw) {
+            $vals = ['k' => 1, 'm' => 1024, 'g' => pow(1024, 2)];
+            $match = [];
+            
+            if (preg_match("/(\d+)(\w)/", strtolower($raw), $match, null, 0)) {
+                $multiplier = key_exists($match[2], $vals) ? $vals[$match[2]] : 0;
+                return $match[1] * $multiplier;
+            }
+            
+            return 0;
+        };
+        
+        if ($val) {
+            
+            if (!preg_match("/(\d+)(\w)/", strtolower($val))) {
+                return false;
+            }
+            ini_set('post_max_size', $val);
+            ini_set('upload_max_filesize', $val);
+        }
+
+        $post_filesize = $getKBytes(ini_get('post_max_size'));
+        $upload_filesize = $getKBytes(ini_get('upload_max_filesize'));
+        
+        if (
+            ($post_filesize < 1 && $upload_filesize) || 
+            ($upload_filesize < $post_filesize && $upload_filesize > 0)
+        ) {
+            return $raw ? ini_get('upload_max_filesize') : $upload_filesize;
+        }
+        
+        return $raw ? ini_get('post_max_size') : $post_filesize;
     }
 }

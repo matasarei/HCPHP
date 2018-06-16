@@ -20,7 +20,7 @@ class ControllerIndex extends Controller {
         
         $lang = new Language();
         
-        $view->set('title', $lang->getString('title', ['HCPHP']));
+        $view->set('title', $lang->getPhrase('title', ['HCPHP']));
         
         $view->display();
     }

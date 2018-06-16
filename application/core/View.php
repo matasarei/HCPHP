@@ -24,7 +24,7 @@ class View extends Template {
             }
             $path = new Path("application/views/{$view}.php", true);
             $this->_path = $path;
-        } catch (WrongPathException $e) {
+        } catch (WrongPathException $ex) {
             throw new TemplateNotFoundException("View '{$view}' does not exist!");
         }
         $this->_layout = new Template($layout);
@@ -51,7 +51,9 @@ class View extends Template {
     }
     
     /**
-     * Makes view
+     * "Render" view and return without echo
+     * @param array $data
+     * @return string
      */
     public function make(array $data = null) {
         $this->_layout->set('content', parent::make($data));
@@ -59,17 +61,22 @@ class View extends Template {
     }
     
     /**
-     * Display view and exit application (optional)
+     * Display view and exit
      * @param array $data template data
-     * @param bool $end exit application
+     * @param type $status
      */
-    public function display(array $data = null, $end = true) {
+    public function display(array $data = null, $status = Application::STATUS_DEFAULT) {
         Events::triggerEvent('onDisplayView', [
             'view' => $this
         ]);
         
+        $header = Application::getMessage(intval($status));
+        if (!empty($header)) {
+            header("HTTP/1.1 {$header}");
+            header("Status: {$header}");
+        }
         echo $this->make($data);
-        $end && exit();
+        exit;
     }
     
 }

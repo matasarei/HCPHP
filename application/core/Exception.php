@@ -38,7 +38,7 @@ class Exception extends \Exception {
         
         // set error message.
         $lang = new Language();
-        parent::__construct($code ? $error : $lang->getString($error_code, $lparams), $code);
+        parent::__construct($code ? $error : $lang->getPhrase($error_code, $lparams), $code);
         
         // event params.
         $event = ['error_code' => $error_code, 'message' => (string)$this];
