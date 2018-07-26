@@ -5,53 +5,44 @@
  * @package    hcphp
  * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20160526
+ * @version    20180727
  */
 
 require_once __DIR__ . '/core/Autoloader.php';
 
-use core\Autoloader;
+// Init autoloader.
+\core\Autoloader::addPath(__DIR__);
+\core\Autoloader::addPath(__DIR__ . '/lib/');
 
-///
-// init autoloader.
-///
-$loader = function($path, $class) {
-    $path = "{$path}/{$class}.php";
-    if (file_exists($path)) {
-        require_once $path;
-        return true;
-    }
-    return false;
-};
-Autoloader::add(__DIR__, $loader);
-Autoloader::add(__DIR__ . '/lib/', $loader);
-
-use core\Application,
-    core\Debug,
-    core\Path,
-    core\Config,
-    core\Globals;
-
-// init cli request.
+// Init cli request.
 if (php_sapi_name() === 'cli') {
-    Application::initCLI($argv);
+    \core\Application::initCLI($argv);
 }
 
-// init debug.
-Debug::init(E_ALL);
-// init path (set root dir).
-Path::init(dirname(__DIR__));
-// init globals interface.
-Globals::init();
+// Init debug.
+\core\Debug::init(E_ALL);
 
-// init debug.
-$default = new Config('default', ['debug' => 0]);
+// Init path builder (set root dir).
+\core\Path::init(dirname(__DIR__));
+
+// Init globals interface.
+\core\Globals::init();
+
+// Init debug.
+$default = new \core\Config('default', ['debug' => 0]);
 $default->debug = is_numeric($default->debug) ? $default->debug : constant($default->debug);
-Debug::mode($default->debug);
+\core\Debug::mode($default->debug);
+
+// Composer autoloader.
+$path = new \core\Path('application/lib/vendor/autoload.php');
+
+if (file_exists($path)) {
+    (include $path);
+}
 
 ///
-// global functions.
+// Global functions.
 ///
 function x($var) {
-    Debug::dump($var, true, debug_backtrace());
+    \core\Debug::dump($var, true, debug_backtrace());
 }

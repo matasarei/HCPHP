@@ -37,7 +37,7 @@ abstract class Model extends Object {
     
 }
 
-//models loader
+// models autoload.
 $loader = function($path, $class) {
     $class = preg_replace('/(models\\\)?(s\/)?(model)?/ui', '', $class);
     $path = sprintf('%s/%s.php', $path, $class);
@@ -47,4 +47,4 @@ $loader = function($path, $class) {
     }
     return false;
 };
-Autoloader::add(new Path("application/models"), $loader);
+Autoloader::addPath(new Path("application/models"), $loader);

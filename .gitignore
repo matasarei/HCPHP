@@ -1,5 +1,6 @@
 .project
 .idea
 nbproject
-cache
-var
+/var/
+/cache/
+/application/lib/vendor/

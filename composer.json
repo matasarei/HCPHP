@@ -1,0 +1,17 @@
+{
+    "name": "matasarei/hcphp",
+    "description": "HCPHP: tiny PHP framework",
+    "type": "project",
+    "license": "GNU",
+    "authors": [
+        {
+            "name": "Yevhen Matasar",
+            "email": "matasar.ei@gmail.com"
+        }
+    ],
+    "minimum-stability": "beta",
+    "config": {
+        "vendor-dir": "application/lib/vendor"
+    },
+    "require": {}
+}
