@@ -1,0 +1,24 @@
+{
+  "name": "matasarei/hcphp",
+  "description": "A PHP framework",
+  "type": "project",
+  "license": "GNU",
+  "authors": [
+    {
+      "name": "Yevhen Matasar",
+      "email": "matasar.ei@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "vendor-dir": "application/lib/vendor"
+  },
+  "require": {
+    "php": ">=7.1",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-pdo": "*",
+    "ext-fileinfo": "*"
+  }
+}

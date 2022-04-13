@@ -1,6 +1,6 @@
-FROM php:7.0-fpm-alpine
+FROM php:7.4-fpm-alpine
+
+RUN apk update && apk add mysql-client zip libzip-dev
+RUN docker-php-ext-install pdo pdo_mysql zip
 
 WORKDIR /var/www/html
-
-RUN docker-php-ext-install mysqli && \
-    docker-php-ext-install pdo_mysql

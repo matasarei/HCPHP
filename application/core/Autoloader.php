@@ -1,73 +1,55 @@
 <?php
-/**
- * HCPHP
- *
- * @package    hcphp
- * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20141109
- */
 
 namespace core;
- 
-spl_autoload_register('core\Autoloader::load');
 
-class Autoloader {
-    
-    /**
-     * Satic only
-     */
-    private function __construct() {}
-    private function __clone() {}
-    
-    private static $_paths = [];
-    private static $_loaders = [];
-    
-    /**
-     * 
-     */
-    static function add($path, callable $callback) {
+use RuntimeException;
+
+/**
+ * @package    hcphp
+ * @subpackage core
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+final class Autoloader
+{
+    private static $paths = [];
+    private static $loaders = [];
+
+    static function add(string $path, callable $callback)
+    {
         if (file_exists($path)) {
-            self::$_paths[] = $path;
-            self::$_loaders[] = $callback;
+            self::$paths[] = $path;
+            self::$loaders[] = $callback;
         } else {
-            throw new \Exception("The specified path ({$path}) does not exists!", 1);
+            throw new RuntimeException(sprintf('The specified path (%s) does not exist!', $path));
         }
     }
-    
-    /**
-     * 
-     */
-    static function addLoader($function) {
-        if (is_callable($function)) {
-            self::$_loaders[] = $function;
-        } else {
-            throw new \Exception("The value is not a function!", 1);       
-        }
+
+    static function addLoader(callable $function)
+    {
+        self::$loaders[] = $function;
     }
-    
-    /**
-     * 
-     */
-    static function addPath($path) {
+
+    static function addPath(string $path)
+    {
         if (file_exists($path)) {
-            self::$_paths[] = $path;
+            self::$paths[] = $path;
         } else {
-            throw new \Exception("The specified path ({$path}) does not exists!", 1);
+            throw new RuntimeException(sprintf('The specified path (%s) does not exist!', $path));
         }
     } 
-    
-    /**
-     * 
-     */
-    public static function load($class) {
-        foreach (self::$_paths as $index => $path) {
+
+    public static function load(string $class): bool
+    {
+        foreach (self::$paths as $index => $path) {
             $class = str_replace('\\', '/', $class);
-            $callback = self::$_loaders[$index];
+            $callback = self::$loaders[$index];
+
             if ($callback($path, $class)) {
                 return true;
             }
         }
+
         return false;
     }
 }

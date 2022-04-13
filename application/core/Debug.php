@@ -1,152 +1,164 @@
 <?php
-/**
- * HCPHP
- *
- * @package    hcphp
- * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20141109
- */
 
 namespace core;
-  
+
+use Throwable;
+
 /**
- * 
+ * @package    hcphp
+ * @subpackage core
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class Debug {
-    
+final class Debug
+{
+    private static $mode = 0;
+    private static $dump = [];
+
     /**
-     * Satic only
+     * @param int $mode E_ALL, E_NOTICE...
      */
-    private function __construct() { }
-    private function __clone() { }
-    
-    private static $_mode = 0;
-    
-    private static $_dump = [];
-    
-    /**
-     * Please use php constants (E_ALL, E_NOTICE...)
-     */
-    static function init($mode = 0) {
+    static function init(int $mode = 0)
+    {
         self::mode($mode);
+
         set_error_handler(array(__CLASS__, 'errorHandler'));
         set_exception_handler(array(__CLASS__, 'exceptionHandler'));
         register_shutdown_function(array(__CLASS__, 'flush'), true);
     }
     
     /**
-     * Please use php constants (E_ALL, E_NOTICE...)
-     * @param int $mode Debug mode (leave empty to return current)
+     * @param int|null $mode E_ALL, E_NOTICE...
+     *
      * @return int current mode
      */
-    static function mode($mode = null) {
-        if (!is_null($mode)) {
-            self::$_mode = (int)$mode;
-            ini_set('display_errors', self::$_mode ? 'On' : 'Off');
-            error_reporting(self::$_mode ? $mode : 0);
-        } else {
-            return self::$_mode;
+    static function mode(int $mode = null): int
+    {
+        if ($mode === null) {
+            return self::$mode;
         }
+
+        self::$mode = $mode;
+        ini_set('display_errors', self::$mode ? 'On' : 'Off');
+        error_reporting(self::$mode ? $mode : 0);
+
         return 1;
     }
-    
+
     /**
      * Return debug state
+     *
      * @return bool Debug state
      */
-    static function isOn() {
-        return (bool)self::$_mode;
+    static function isOn()
+    {
+        return (bool)self::$mode;
     }
-    
-    /**
-     * Notice / Error handler
-     * @param type $errno
-     * @param type $errmsg
-     * @param type $errfile
-     * @param type $errline
-     */
-    static function errorHandler($errno, $errmsg, $errfile, $errline) {
-        if (self::$_mode) {
-            $errfile = implode('/', array_slice(explode('/', $errfile), -2));
-            self::dump("ERROR {$errno} ({$errmsg}) in {$errfile} on line {$errline}", false);
+
+    static function errorHandler(int $errno, string $errMsg, string $errFile, int $errLine)
+    {
+        if (self::$mode) {
+            $errFile = implode('/', array_slice(explode('/', $errFile), -2));
+            $error = sprintf(
+                '[E] error %d (%s) in %s on line %d',
+                $errno,
+                $errMsg,
+                $errFile,
+                $errLine
+            );
+
+            if (Application::getMode() === Application::MODE_CLI) {
+                self::_print($error);
+            }
+
+            self::dump($error, false);
         }
     }
-    
-    /**
-     * Exceptions handler
-     * @param type $exception
-     */
-    static function exceptionHandler($exception) {
-        if (self::$_mode) {
+
+    static function exceptionHandler(Throwable $exception)
+    {
+        if (self::$mode) {
             $msg = preg_replace([
-                "/\s*(Stack trace)/", "/\s*#/"
+                '/\s*(Stack trace)/', '/\s*#/'
             ], ["\n$1", "\n#"], (string)$exception, -1);
             
-            self::_print("{$msg}\n" . self::flush());
+            self::_print(sprintf("[E] %s\n", $msg) . self::flush());
         }
     }
-    
-    /**
-     * Value dump
-     * @param type $val
-     * @param type $export
-     */
-    static function dump($val, $export = true, array $backtrace = []) {
+
+    static function dump($val, bool $export = true, array $backtrace = [])
+    {
         if ($export) {
-            !$backtrace && $backtrace = debug_backtrace();
+            if (empty($backtrace)) {
+                $backtrace = debug_backtrace();
+            }
+
             $current = $backtrace[0];
-            
-            $val = "{$current['file']}, line {$current['line']}:\n" . print_r($val, true);
+
+            if (is_bool($val)) {
+                $exported = $val ? 'true' : 'false';
+            } else {
+                $exported = print_r($val, true);
+            }
+
+            $val = sprintf("[D] %s, like %d:\n%s", $current['file'], $current['line'], $exported);
         }
-        
-        self::$_dump[] = "{$val}\n";
+
+        self::$dump[] = $val . "\n";
     }
     
     /**
-     * Flush debug bump or print dump
+     * Flush debug dump or print dump
+     *
      * @param bool $echo TRUE to print or FALSE to flush
-     * @return string Printed debug output or NULL
+     *
+     * @return string|null
      */
-    static function flush($echo = false) {
-        if (self::$_mode) {
-            $string = implode(self::$_dump);
-            self::$_dump = [];
+    static function flush(bool $echo = false): ?string
+    {
+        if (self::$mode) {
+            $string = implode(self::$dump);
+            self::$dump = [];
             
             if ($echo && $string) {
-                echo self::_print($string);
+                self::_print($string);
             }
+
             return $string;
         }
+
+        return null;
     }
-    
-    /**
-     * 
-     * @param type $message
-     */
-    private static function _print($message) {
-        //prepare for browser
-        $message = nl2br(str_replace(" ", "&nbsp;", $message));
-        
-        //prepare list
-        $message = Html::tag('span', $message, [
+
+    private static function _print(string $message)
+    {
+        if (Application::getMode() === Application::MODE_CLI) {
+            echo PHP_EOL . $message . PHP_EOL;
+
+            return;
+        }
+
+        $message = Xml::tag(
+            'span',
+            nl2br(str_replace(' ', '&nbsp;', htmlentities($message))),
+            [
+                'style' => [
+                    'background:#fff;',
+                    'padding: 2px 0;',
+                    'line-height: 18px;'
+                ],
+                'class' => 'debug-message'
+            ]
+        );
+
+        echo Xml::tag('div', $message, [
             'style' => [
-                'background:#fff',
-                'padding: 2px 0',
-                'line-height: 18px'
-            ],
-            'class' => 'debug-message'
-        ]);
-        
-        //insert in wrapper and display
-        echo Html::tag('div', $message, [
-            'style' => [
-                'position:absolute',
-                'left:0',
-                'top:0',
-                'min-width:1024px',
-                'z-index:10001',
-                "font: bold 13px Monaco, monospace",
+                'position:absolute;',
+                'left:0;',
+                'top:0;',
+                'min-width:1024px;',
+                'z-index:10001;',
+                "font: bold 13px Monaco, monospace;",
             ],
             'class' => 'debug-wrapper'
         ]);

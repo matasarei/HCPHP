@@ -1,29 +1,29 @@
 <?php
+
+namespace core;
+
 /**
- * Event handler
- * 
  * @package    hcphp
  * @subpackage core
  * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20160526
  */
-
-namespace core;
-
-abstract class Handler extends Object {
-    
+abstract class Handler
+{
     /**
      * Construct and run handler
-     * @param \stdClass $data Event data
+     *
+     * @param MagicObject $data Event data
      */
-    public function __construct(\stdClass $data = null) {
+    public function __construct($data = null)
+    {
         $this->handle($data);
     }
-    
+
     /**
-     * Handle operations implements here
+     * @param MagicObject $data
+     *
+     * @return mixed
      */
     abstract protected function handle($data);
-    
 }

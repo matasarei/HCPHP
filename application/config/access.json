@@ -1,0 +1,27 @@
+{
+    "roles" : [
+        {
+            "name" : "user",
+            "desc" : "User"
+        }
+    ],
+    "capabilities": {
+        "system": {
+            "view_records": {
+                "roles": [
+                    "user"
+                ]
+            },
+            "edit_records": {
+                "roles": [
+                    "user"
+                ]
+            },
+            "get_files": {
+                "roles": [
+                    "user"
+                ]
+            }
+        }
+    }
+}

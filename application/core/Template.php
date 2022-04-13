@@ -1,126 +1,104 @@
 <?php
 
-/**
- * HCPHP
- * Template processor 
- * (experimental preprocessing features!)
- *
- * @package hcphp
- * @author  Yevhen Matasar <matasar.ei@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version 20160801
- */
-
 namespace core;
 
-use core\Exception;
+use InvalidArgumentException;
+use stdClass;
 
-class Template extends Object {
+/**
+ * @package    hcphp
+ * @subpackage core
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class Template
+{
+    protected $data = [];
+    protected $path;
+    protected $template;
+    protected $useShortCodes = true;
+    private static $shortcodes = [];
 
-    protected $_data = [];
-    protected $_path;
-    protected $_template;
-    private static $_shortcodes = [];
-    private static $_filters = [];
-    protected $_useShortcodes = true;
-    
-    /**
-     * 
-     * @param type $val
-     */
-    public function setUseShortcode($val) {
-        $this->_useShortcodes = (bool)$val;
-    }
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getPath() {
-        return $this->_path;
+    public function useShortCodes(bool $value)
+    {
+        $this->useShortCodes = $value;
     }
 
+    public function isUsesShortCodes(): bool
+    {
+        return $this->useShortCodes;
+    }
+
+    public function getPath(): Path
+    {
+        return $this->path;
+    }
+
     /**
-     * Example: new Tempalte('new_template') for 'templates/new_tempalte.php'
+     * Example: new Template('foo/bar') for 'templates/foo/bar.php'
+     *
      * @param string $template Template name
-     * @throws TemplateNotFoundException Erorr if wrong template name or does not exist
+     *
+     * @throws InvalidArgumentException
      */
-    public function __construct($template) {
-        $this->_path = new Path("application/templates/{$template}.php");
+    public function __construct(string $template)
+    {
+        $this->path = new Path(sprintf('application/templates/%s.php', $template));
 
-        if (!file_exists($this->_path)) {
-            throw new TemplateNotFoundException("Template '{$template}' does not exist!");
+        if (!file_exists($this->path)) {
+            throw new InvalidArgumentException(sprintf('Template "%s" does not exist!', $template));
         }
 
-        $this->_template = $template;
+        $this->template = $template;
+    }
+
+    public function getData(): array
+    {
+        return $this->data;
     }
 
     /**
-     * returns all template variables
+     * @param array $data assoc array, 'var'=>'value'
+     *
+     * @return self
      */
-    public function getData() {
-        return $this->_data;
+    public function setData(array $data): self
+    {
+        $this->data = array_merge($this->data, $data);
+
+        return $this;
     }
 
     /**
-     * Set array of values (assoc array 'var'=>'value')
+     * @param string $name
+     * @param mixed $value
+     *
+     * @return self
      */
-    public function setData($data) {
-        $this->_checkArg($data, array('array', 'object'));
-        if (is_object($data)) {
-            $data = (array)$data;
+    public function set(string $name, $value): self
+    {
+        $this->data[$name] = $value;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return mixed|null
+     */
+    public function get(string $name)
+    {
+        if (isset($this->data[$name])) {
+            return $this->data[$name];
         }
-        
-        $this->_data = array_merge($this->_data, $data);
-    }
 
-    /**
-     * Set template variable
-     */
-    public function set($name, $value) {
-        $this->_data[$name] = $value;
-        return true;
-    }
-    
-    /**
-     * Push value to an array
-     */
-    public function push($name, $value, $index = null) {
-        if (isset($this->_data[$name])) {
-            $current = $this->_data[$name];
-            if (!is_array($current)) {
-                $newval = [$current];
-            }
-        } else {
-            $newval = [];
-        }
-        $index ? $newval[$index] = $value : $newval[] = $value;
-        $this->_data[$name] = $newval;
-        return true;
-    }
-
-    /**
-     * Get template variable
-     */
-    public function get($name) {
-        if (isset($this->_data[$name])) {
-            return $this->_data[$name];
-        }
         return null;
     }
 
-    /**
-     * Magic getter
-     * Returns class prop or template variable (prop priority)
-     * @param type $name
-     * @return type
-     */
-    public function __get($name) {
-        try {
-            return parent::__get($name);
-        } catch (UndefinedGetterException $ex) {
-            return $this->get($name);
-        }
+    public function __get(string $name)
+    {
+        return $this->get($name);
     }
 
     /**
@@ -128,243 +106,213 @@ class Template extends Object {
      *
      * @param mixed Include data
      */
-    public function make(array $data = null) {
-        $cache = new Path("/cache/templates/{$this->_template}.tmp");
+    public function make(array $data = null)
+    {
+        $cache = new Path(sprintf('/cache/templates/%s.tmp', $this->template));
 
-        if (!(is_readable($cache) && filemtime($cache) > filemtime($this->_path))) {
-            $contents = file_get_contents($this->_path);
-            $cache = new Path("/cache/templates/{$this->_template}.tmp");
+        if (!(is_readable($cache) && filemtime($cache) > filemtime($this->path))) {
+            $contents = file_get_contents($this->path);
+            $cache = new Path(sprintf('/cache/templates/%s.tmp', $this->template));
             $cache->mkpath();
+
             file_put_contents($cache, $this->parse($contents));
         }
-        $this->_path = $cache;
 
-        $data && $this->data = $data;
-        extract($this->_data, EXTR_OVERWRITE);
+        $this->path = $cache;
+
+        if ($data !== null) {
+            $this->setData($data);
+        }
+
+        extract($this->data, EXTR_OVERWRITE);
         ob_start();
-        include ($this->_path);
+        include ($this->path);
+
         return ob_get_clean();
     }
 
-    /**
-     * Removes all caches (needs access to the cahce directory)
-     * @return bool Result
-     */
-    public static function purgeCaches($path = '/cache/templates/') {
-        $caches = new Path($path);
-        return $caches->rmpath(true);
-    }
-
-    /**
-     * Parse template
-     */
-    private function parse($contents) {
+    private function parse(string $contents)
+    {
         // remove comments.
-        $contents = preg_replace("/\{\*.*\*\}/Uus", "", (string)$contents, -1);
-        
-        
+        $contents = preg_replace('/\{\*.*\*\}/Us', '', $contents, -1);
         $matches = [];
-        if ($this->_useShortcodes) {
+        $lines = [];
+
+        if ($this->useShortCodes) {
             // fetch all shortcodes.
-            preg_match_all("/{{\s*(.*)\s*}}/Uus", $contents, $matches, PREG_SET_ORDER, 0);
-            
+            preg_match_all("/(\!)?{{\s*(.*)\s*}}/Uus", $contents, $matches, PREG_SET_ORDER, 0);
+
             // explode to lines.
             $lines = preg_split("/\n/", $contents, -1, null);
         }
 
         // process each shortcode.
         foreach ($matches as $match) {
+            // ignore shortcode
+            if ($match[1] === '!') {
+                $pattern = '#' . preg_quote($match[0]) . '#';
+
+                //replace in template
+                $contents = preg_replace($pattern, sprintf('{{%s}}', $match[2]), $contents, -1);
+                continue;
+            }
+
             $pattern = '#' . preg_quote($match[0]) . '#';
-            $info = new \stdClass();
-            $info->file = $this->_path;
-            
+            $info = new stdClass();
+            $info->file = $this->path;
+
             $extracted = array_keys(preg_grep($pattern, $lines));
             $info->line = $extracted ? array_shift($extracted) + 1 : false;
-            
-            //replace slash(\) by 'end'
+
+            // replace slash(\) by 'end'.
             $match = preg_replace("/^\s*\/(.*)/", "end\$1", $match, -1);
 
-            //get function name and params
-            $params = preg_split("@\|@s", $match[1], -1, null);
-            
-            //method name
+            // get function name and params.
+            $params = preg_split("@\|@s", $match[2], -1, null);
+
+            // method name.
             $method = "parse{$params[0]}";
-            
-            //predefined shortcodes
-            if (preg_match('@(\$[A-Za-z]|^[A-Z0-9_]{2,})@', $params[0])) {
+
+            // predefined shortcodes.
+            if (preg_match('@(\$[A-Za-z0-9_]|^[A-Z][A-Z0-9_]{2,})@', $params[0])) {
                 $replacement = $this->parseEcho([$params[0]], $info);
-                
-            //custom shortcodes (hooks)
-            } elseif (isset(self::$_shortcodes[$params[0]])) {
-                $func = self::$_shortcodes[$params[0]];
+
+                // custom shortcodes (hooks).
+            } elseif (isset(self::$shortcodes[$params[0]])) {
+                $func = self::$shortcodes[$params[0]];
                 $replacement = $func($params, $info);
-                
+
             } elseif (method_exists($this, $method)) {
                 $replacement = $this->$method($params, $info);
-                
+
             } else {
                 $replacement = $this->replaceWithNotice($params, $info);
             }
-            
-            //replace in template
+
+            // replace in template.
             $contents = preg_replace($pattern, $replacement, $contents, -1);
         }
-        
-        // remove whitespaces (production only, ingnores in debug mode) and return.
-        return Debug::isOn() ? $contents : preg_replace("@\s+@s", " ", $contents, -1);
+
+        // do not compress template if debug enabled or any preformatted content exist.
+        if (Debug::isOn() || preg_match('@<pre@', $contents)) {
+            return $contents;
+        }
+
+        // remove php comments.
+        $contents = preg_replace(['/(^\s*|;\s*)\/\/.*(\?>|[\n\r]+|\s*$)/Um', '/\/\*.*\*\//Us'], ['$1$2', ''], $contents, -1);
+
+        return preg_replace("@\s+@s", " ", trim($contents), -1);
     }
-    
+
     /**
-     * Replace shortcode with notice to warn developer.
-     * @param type $params
-     * @param type $info
-     * @return type
+     * @param array $params
+     * @param object $info
+     *
+     * @return string
      */
-    public static function replaceWithNotice($params, $info) {
-        $msg = "Parse error: wrong syntax or shortcode does not defined in {$info->file}";
-        trigger_error($info->line ? "{$msg} on line: {$info->line}" : $msg);
+    public static function replaceWithNotice(array $params, $info)
+    {
+        $msg = sprintf('Parse error: wrong syntax or shortcode does not defined in %s', $info->file);
+        trigger_error($info->line ? sprintf('%s on line %s', $msg, $info->line) : $msg);
         
         if (Debug::isOn()) {
             return '{{' . implode('|', $params) . '}}';
         }
-        return "%shortcode%";
+
+        return '%shortcode%';
     }
 
     /**
-     * @param string $params vars to echo
-     * @return string PHP ready code
+     * @param array $params
+     * @param object $info
+     *
+     * @return string
      */
-    public function parseEcho(array $params, $info) {
+    public function parseEcho(array $params, $info): string
+    {
         if (empty($params)) {
-            return $this->replaceWithNotice($params, $info);
+            return self::replaceWithNotice($params, $info);
         }
-        
-        return "<?php echo {$params[0]} ?>";
+
+        return sprintf('<?php echo %s ?>', $params[0]);
     }
 
     /**
-     * Parse if condition
-     * @param string $params Statement params
-     * @return string PHP ready code
-     */
-    public function parseIf(array $params, $info) {
-        if (empty($params[1])) {
-            return $this->replaceWithNotice($params, $info);
-        }
-
-        // condition only
-        if (empty($params[2]) && empty($params[3])) {
-            return "<?php if($params[1]): ?>";
-        }
-        
-        // consequent or alternative exists
-        empty($params[2]) && $params[2] = "''";
-        $return = "<?php if({$params[1]}) { {$params[2]}; }";
-        return empty($params[3]) ? "{$return} ?>" : "{$return} else { {$params[3]}; } ?>";
-    }
-    
-    /**
-     * endif closing tag
+     * Template shortcode
+     * syntax: {{template|name[|data_array]}}
+     * examples:
+     *  {{template|some_name}}
+     *  {{template|'some_name'|['var' => 'value']}}
+     *  {{template|'/path/to/template_name'}}
+     *
+     * @param array $params
+     * @param object $info
+     *
      * @return string
      */
-    public function parseEndIf() {
-        return "<?php endif; ?>";
+    public function parseTemplate(array $params, $info): string
+    {
+        if (empty($params[1])) {
+            return self::replaceWithNotice($params, $info);
+        } else {
+            $params[1] = preg_replace("@[\'\"](.*)[\'\"]@", '$1', $params[1], -1);
+        }
+
+        return sprintf(
+            '<?php echo (new \core\Template("%s"))->make(%s); ?>',
+            $params[1],
+            $params[2] ?? 'null'
+        );
     }
-    
+
     /**
-     * endif closing tag
+     * Language template shortcode
+     * Syntax: {{lang|string_name[|args][|language_code]}}
+     * Examples:
+     *  {{lang|name|['some', 'args', 123, 123]}}
+     *  {{lang|name||en}}
+     *
+     * @param array $params
+     * @param object $info
+     *
      * @return string
      */
-    public function parseElse($params) {
-        if (!empty($params[1])) {
-            return "<?php elseif({$params[1]}) :?>";
-        }
-        
-        return "<?php else: ?>";
-    }
+    public function parseLang(array $params, $info): string
+    {
+        $quotesPattern = "@[\'\"](.*)[\'\"]@";
 
-    /**
-     * Parse foreach statement
-     * syntax example 1: {{foreach var, key in array}}...{{/foreach}}
-     * syntax example 2: {{foreach array as var, key}}...{{/foreach}}
-     * @param string $params Statement params
-     * @param stdClass $info Process info
-     * @return string PHP ready code (null if failed)
-     */
-    public function parseForEach($params, $info) {
         if (empty($params[1])) {
-            return $this->replaceWithNotice($params, $info);
+            return self::replaceWithNotice($params, $info);
         }
-        
-        $foreach = "foreach({$params[1]} as";
-        $keyval = empty($params[3]) ? "{$params[2]}" : "{$params[2]} => {$params[3]}";
-        return "<?php {$foreach} {$keyval}): ?>";
-    }
 
-    /**
-     * foreach statement closing tag
-     * @return string closing tag
-     */
-    public function parseEndForEach() {
-        return "<?php endforeach; ?>";
+        $return = "<?php echo \core\Language::getInstance()->getString({$params[1]}";
+
+        if (empty($params[2])) {
+            $return .= ', []';
+        } else {
+            $return .= ', ' . $params[2];
+        }
+
+        if (isset($params[3])) {
+            $return .= ", '" . preg_replace($quotesPattern, "$1", $params[3], -1) . "'";
+        }
+
+        return $return . '); ?>';
     }
 
     /**
      * Adds hook in parser. Can override parser functions.
-     * @param type $name Hook name
-     * @param callable $func Anonimous function: function(string $params[, stdClass $info])
+     *
+     * @param string $name Hook name
+     * @param callable $func function(string $params[, stdClass $info])
      */
-    public static function addShortcode($name, callable $func) {
-        self::$_shortcodes[$name] = $func;
+    public static function addShortcode(string $name, callable $func)
+    {
+        self::$shortcodes[$name] = $func;
     }
 
-    /**
-     * Adds filter in parser.
-     * @param type $name Filter name
-     * @param callable $func Anonimous function: function(string $params[, stdClass $info])
-     */
-    public static function addFilter($name, callable $func) {
-        self::$_filters[$name] = $func;
-    }
-}
-
-/**
- * Template shortcode
- * syntax: {{template|name[|data_array]}}
- * examples: 
- *  {{template|some_name}}
- *  {{template|'some_name'|['var' => 'value']}}
- *  {{template|'/path/to/template_name'}}
- */
-Template::addShortcode('template', function($params, $info) {
-    // check template name.
-    if (empty($params[1])) {
-        return Template::replaceWithNotice($params, $info);
-    } else {
-        $params[1] = preg_replace("@[\'\"](.*)[\'\"]@", "$1", $params[1], -1);
-    }
-    
-    // random template name.
-    $name = '$template' . rand();
-
-    // new tamplate instance.
-    $return = "{$name} = new \core\Template('{$params[1]}'); ";
-    
-    // if data array defined.
-    if (!empty($params[2])) {
-        $return .= "{$name}->setData({$params[2]}); ";
-    }
-    
-    return "<?php {$return} echo {$name}->make(); ?>";
-});
-
-class TemplateNotFoundException extends Exception {
-    const ERROR_DEFAULT = 'template_not_found';
-    
-    public function __construct($error, $code = 0, $lparams = []) {
-        if ($code < 1) {
-            $code = 1;
-        }
-        parent::__construct($error, $code, $lparams);
+    public function __toString()
+    {
+        return $this->make();
     }
 }

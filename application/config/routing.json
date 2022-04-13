@@ -1,32 +1,28 @@
 {
     "routes" : {
-        
-        "error_test": {
-            "controller": "index",
-            "action": "error"
+        "user/(\\d+)": {
+            "controller": "user",
+            "action": "default"
         },
-        
-        "forbidden_test": {
-            "controller": "index",
-            "action": "forbidden"
+        "records/add": {
+            "controller": "records",
+            "action": "edit"
         },
-        
-        "^test/html": {
-            "controller": "html",
-            "action": "test"
+        "records/(\\d+)/edit": {
+            "controller": "records",
+            "action": "edit"
         },
-        
-        "^test/1/2/$" : {
-            "controller": "index",
-            "action": "ParamsTest",
-            "params": [
-                "override", "params", "here"
-            ]
+        "records/(\\d+)/delete": {
+            "controller": "records",
+            "action": "delete"
         },
-         
-        "^test/(\\d)?" : {
-            "controller": "index",
-            "action": "RoutingTest"
+        "records/(\\d+)/download/(\\w+)": {
+            "controller": "records",
+            "action": "download"
+        },
+        "records/(\\d+)": {
+            "controller": "records",
+            "action": "view"
         }
     }
 }

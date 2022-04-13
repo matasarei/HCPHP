@@ -1,0 +1,129 @@
+{
+    "tables": [
+        {
+            "name"   : "users",
+            "title"  : "Users",
+            "fields" : [
+                {
+                    "name"   : "firstname",
+                    "desc"   : "First name",
+                    "length" : 32,
+                    "type"   : "Text"
+                },
+                {
+                    "name"   : "lastname",
+                    "desc"   : "Last name",
+                    "length" : 32,
+                    "type"   : "Text"
+                },
+                {
+                    "name"   : "email",
+                    "desc"   : "E-Mail",
+                    "length" : 128,
+                    "type"   : "Text"
+                },
+                {
+                    "name"   : "password",
+                    "desc"   : "password",
+                    "length" : 128,
+                    "type"   : "Text"
+                },
+                {
+                    "name"   : "role",
+                    "desc"   : "Role name / ID",
+                    "length" : 16,
+                    "type"   : "Text"
+                },
+                {
+                    "name"   : "authkey",
+                    "desc"   : "Authentication key",
+                    "length" : 128,
+                    "type"   : "Text"
+                },
+                {
+                    "name": "authtime",
+                    "desc": "Authentication time",
+                    "type": "DateTime"
+                }
+            ]
+        },
+        {
+            "name"   : "records",
+            "title"  : "Records",
+            "fields" : [
+                {
+                    "name": "text_field",
+                    "desc": "Text",
+                    "length": 256,
+                    "type": "Text"
+                },
+                {
+                    "name": "int_field",
+                    "desc": "Integer",
+                    "length": 8,
+                    "type": "Integer",
+                    "default": 1
+                },
+                {
+                    "name": "real_field",
+                    "desc": "Numeric (real)",
+                    "length": 10.5,
+                    "type": "Real",
+                    "default": 1.1
+                },
+                {
+                    "name": "enum_field",
+                    "desc": "Enum",
+                    "type": "Enum",
+                    "default": "two",
+                    "values": [
+                        "one",
+                        "two",
+                        "three"
+                    ]
+                },
+                {
+                    "name": "bool_field",
+                    "desc": "Bool",
+                    "type": "Boolean",
+                    "default": 0
+                },
+                {
+                    "name": "relation_field",
+                    "desc": "Relation",
+                    "type": "Relation",
+                    "table": "relation_table",
+                    "field": "text"
+                },
+                {
+                    "name": "file_field",
+                    "desc": "File",
+                    "type": "File"
+                },
+                {
+                    "name": "date_field",
+                    "desc": "Date and time",
+                    "type": "DateTime",
+                    "format": "d.m.Y"
+                },
+                {
+                    "name": "textarea",
+                    "desc": "Textarea",
+                    "type": "MediumText"
+                }
+            ]
+        },
+        {
+            "name": "relation_table",
+            "title": "Relation table test",
+            "fields": [
+                {
+                    "name": "text",
+                    "desc": "Text",
+                    "length": 32,
+                    "type": "Text"
+                }
+            ]
+        }
+    ]
+}

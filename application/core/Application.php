@@ -1,376 +1,506 @@
 <?php
-/**
- * HCPHP
- *
- * @package    hcphp
- * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20161020
- */
 
 namespace core;
 
-use core\Exception,
-    core\Globals;
+use InvalidArgumentException;
+use RuntimeException;
 
-class Application {
-    
-    /**
-     * Satic only
-     */
-    private function __construct() {}
-    private function __clone() {}
-    
-    /**
-     * Controller name
-     * @var string 
-     */
-    private static $_controller = null;
-    
-    /**
-     * Returns controller name
-     * @return type
-     */
-    public static function getController() {
-        return self::$_controller;
-    }
-    
-    /**
-     * Actions name
-     * @var string
-     */
-    private static $_action = null;
-    
-    /**
-     * Returns action name
-     * @return type
-     */
-    public static function getAction() {
-        return self::$_action;
-    }
-    
-    /**
-     * Request params
-     * @var array
-     */
-    private static $_params = [];
-    
-    /**
-     * Start application
-     */
-    static function start() {
-        Events::triggerEvent('onInit');
-        
-        // load config.
-        $config = new Config('default', ['lang' => 'en']);
-        
-        // get request.
-        $url = preg_replace("@(^\/+|(\/)\/+)@", "$2", filter_var(Globals::optional('q'), FILTER_SANITIZE_URL), -1);
-	$request = $url ? preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY) : [];
-
-        // init language.
-        $lang = empty($_REQUEST['l']) ? $config->lang : $_REQUEST['l'];
-        try {
-            Language::setDefault($lang);
-        } catch (Exception $e) {
-            if (Debug::isOn()) {
-                trigger_error("Wrong language code! Can't load default language config ({$lang})");
-                trigger_error($e->getMessage());
-                exit();
-            } else {
-                self::redirect(new Url());
-            }
-        }
-        
-        // search in manual configurated routes.
-        if (!self::_findRoute($url)) {
-            // if not found, setup automatically.
-            self::_autoRoute($request);
-        }
-        
-        Events::triggerEvent('onStart', [
-            'controller' => self::$_controller,
-            'action'     => self::$_action,
-            'params'     => self::$_params
-        ], true);
-        
-        // try to load controller.
-        if(!self::_loadController()) {
-            if (Debug::isOn()) {
-                $message = "404: Controller '%s' or action '%s' does not exists.";
-                self::sendError(self::ERROR_NOT_FOUND, sprintf($message, self::$_controller, self::$_action));
-            } else {
-                self::sendError(self::ERROR_NOT_FOUND);
-            }
-        }
-    }
-    
-    /**
-     * Find preconfigured route
-     * @param string $request full request string
-     * @return boolean
-     */
-    private static function _findRoute($request) {
-        $config = new Config('routing', ['routes']);
-        $matches = [];
-        
-        // check preconfigured route rules.
-        foreach($config->routes as $pattern => $route) {
-            
-            // check required fields.
-            if (empty($route->controller)) {
-                throw new Exception('e_route_controller_undefined', 0, [$pattern]);
-            }
-
-            // if request match route rule.
-            if (preg_match("%^{$pattern}%ui", $request, $matches)) {
-                
-                // set default values.
-                empty($route->params) && $route->params = [];
-                empty($route->action) && $route->action = 'default';
-                
-                // setup route.
-                self::$_controller = strtolower($route->controller);
-                self::$_action = strtolower($route->action);
-                
-                // process params.
-                unset($matches[0]);
-                self::$_params = self::_makeParams($route->params ? $route->params : $matches, $request);
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Make params from request or route configuration
-     * @param type $params
-     * @param type $toExtract
-     * @return array Params
-     */
-    private static function _makeParams($params, $toExtract = null) {
-        // if params is preconfigured. 
-        if (is_array($params)) {
-            return array_values($params);
-        }
-        
-        // add missing slash.
-        if (!preg_match('/\/$/', $params)) {
-            $params .= '\/';
-        }
-        
-        // prepare pattern.
-        $params = "%{$params}$%ui";
-        
-        // extract params from string.
-        $matches = [];
-        if (preg_match($params, $toExtract, $matches, null, 0)) {
-            unset($matches[0]);
-            return array_values($matches);
-        }
-        return [];
-    }
-    
-    /**
-     * Define destination automatically
-     * @param array $request Request params
-     */
-    private static function _autoRoute(array $request) {
-        // get controller, action, params.
-        self::$_controller = !empty($request[0]) ? strtolower($request[0]) : 'index';
-        self::$_action = !empty($request[1]) ? strtolower($request[1]) : 'default';
-        if (count($request) > 2) {
-            for ($i = 2; $i < count($request); $i++) { 
-                self::$_params[] = $request[$i];
-            }
-        }
-    }
-    
-    /**
-     * Load current controller
-     * @return boolean
-     */
-    private static function _loadController() {
-        $path = new Path(sprintf('application/controllers/%s.php', self::$_controller));
-        if (file_exists($path)) {
-            require_once $path;
-            $controller = sprintf('Controller%s', self::$_controller);
-            $action = sprintf('action%s', self::$_action);
-            if (class_exists($controller) && method_exists($controller, $action)) {
-                $controller = new $controller(self::$_controller, self::$_action);
-                call_user_func_array([$controller, $action], self::$_params);
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    const ERROR_FORBIDDEN = 403;
-    const ERROR_NOT_FOUND = 404;
-    const ERROR_INTERNAL = 500;
-    
-    /**
-     * 
-     * @param type $code
-     * @param type $message
-     */
-    static function sendError($code = self::ERROR_INTERNAL, $message = null) {
-        if ($code == 403) {
-            $header = "403 Forbidden";
-        } elseif ($code == 404) {
-            $header = "404 Not Found";
-        } else {
-            $header = "500 Internal Server Error";
-        }
-        
-        if ($message) {
-            self::$_params[0] = $message;
-        } else {
-            self::$_params[0] = null;
-            $message = $header;
-        }
-        
-        
-        header("HTTP/1.0 {$header}");
-        header("Status: {$header}");
-        self::$_controller = $code;
-        self::$_action = 'default';
-        if (!self::_loadController()) {
-            die($message);
-        }
-        exit;
-    }
-    
-    /**
-     * Send response or request to specified URI
-     * @param array $data Assoc data array
-     * @param \core\Url $uri Handler URI
-     * @return Request result
-     */
-    static function sendData(array $data, $uri = null) {
-        if ($uri) {
-            $url = new Url($uri, $data);
-            return file_get_contents($url);
-        }
-        header('Content-type: application/json');
-        echo json_encode($data);
-        exit();
-    }
-    
+/**
+ * @package    hcphp
+ * @subpackage core
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+final class Application
+{
     const REDIRECT_MOVED = 301;
     const REDIRECT_TEMPORARY = 302;
-    
+
+    const MODE_WEB = 'web';
+    const MODE_API = 'api';
+    const MODE_CLI = 'cli';
+
+    /**
+     * Controller name
+     *
+     * @var string
+     */
+    private static $controllerName = null;
+
+    /**
+     * Actions name
+     *
+     * @var string
+     */
+    private static $actionName = null;
+
+    /**
+     * Request params
+     *
+     * @var array
+     */
+    private static $requestParameters = [];
+
+    /**
+     * @var string
+     */
+    static $mode = self::MODE_WEB;
+
+    public static function getControllerName(): ?string
+    {
+        return self::$controllerName;
+    }
+
+    public static function getActionName(): ?string
+    {
+        return self::$actionName;
+    }
+
+    public static function getContainer(): Container
+    {
+        static $container;
+
+        if (!$container instanceof Container) {
+            $container = new Container();
+        }
+
+        return $container;
+    }
+
     /**
      * Redirect to specific URL
-     * @param \core\Url $url URL
+     *
+     * @param Url|string $url URL
+     * @param int $code Redirect code
      */
-    static function redirect($url, $code = self::REDIRECT_MOVED) {
+    static function redirect($url, int $code = self::REDIRECT_MOVED)
+    {
         if (!preg_match("/^\w*\:\/\//", $url)) {
             $url = new Url($url);
         }
-        
-        if ($code == self::REDIRECT_TEMPORARY) {
-            header('HTTP/1.1 302 Moved Temporarily');
-        } else {
-            header('HTTP/1.1 301 Moved Permanently');
-        }        
-        header("Location: {$url}");
-        exit();
+
+        http_response_code($code);
+        header(sprintf('Location: %s', $url));
+
+        Application::stop();
     }
-    
-    const MODE_DEFAULT = 'default';
-    const MODE_AJAX = 'ajax';
-    const MODE_CLI = 'cli';
-    
-    /**
-     *
-     * @var type 
-     */
-    static $_mode = self::MODE_DEFAULT;
-    
-    /**
-     * 
-     * @param type $mode
-     * @return boolean
-     */
-    static function setMode($mode) {
-        $reflection = new \ReflectionClass(__CLASS__);
-        if (!in_array($mode, $reflection->getConstants(), true)) {
-            trigger_error("Wrong application mode '{$mode}'");
-            return false;
+
+    static function setMode(string $mode)
+    {
+        if (!in_array($mode, [self::MODE_CLI, self::MODE_API, self::MODE_WEB], true)) {
+            throw new RuntimeException('Wrong app mode provided');
         }
-        return true;
+
+        self::$mode = $mode;
     }
-    
-    /**
-     * Get current application mode
-     * @return type
-     */
-    static function getMode() {
-        return static::$_mode;
+
+    static function getMode(): string
+    {
+        return self::$mode;
     }
-    
-    /**
-     * Initialize CLI modes
-     * @param type $argv Array of arguments passed to script from the command line.
-     */
-    static function initCLI($argv) {
-        // The first argument $argv[0] is always the name that was used to run the script.
-        !empty($argv[1]) && $_REQUEST['q'] = $argv[1];
-        !empty($argv[2]) && $_REQUEST['l'] = $argv[2];
-        self::setMode(self::MODE_CLI);
-    }
-    
-    /**
-     * Get remote (user) IP
-     * @return string IP address
-     */
-    static function getRemoteIP() {
-        $ip = "127.0.0.1";
-        $sources = ['HTTP_CLIENT_IP', 
-                    'HTTP_X_FORWARDED_FOR', 
-                    'HTTP_X_FORWARDED',
-                    'HTTP_FORWARDED_FOR',
-                    'HTTP_FORWARDED',
-                    'REMOTE_ADDR'];
-        
-        foreach($sources as $source) {
+
+    static function getRemoteIp(): string
+    {
+        $sources = [
+            'HTTP_CLIENT_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_X_FORWARDED',
+            'HTTP_FORWARDED_FOR',
+            'HTTP_FORWARDED',
+            'REMOTE_ADDR',
+        ];
+
+        foreach ($sources as $source) {
             if (getenv($source)) {
                 return getenv($source);
             }
         }
-        return $ip;
-    }
-    
-    /**
-     * Get application / server IP
-     * @return string IP address
-     */
-    static function getIP() {
-        $ip = "127.0.0.1";
-	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $host = gethostname();
-            return $host ? gethostbyname($host) : $ip;
-        }
-        return exec("ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '{$ip}'");
+
+        return '127.0.0.1';
     }
 
-	
-    
+    static function getServerIp(): string
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $ip = "127.0.0.1";
+            $host = gethostname();
+
+            return $host ? gethostbyname($host) : $ip;
+        }
+
+        return exec("ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'");
+    }
+
     /**
-     * Check mod_rewrite support
-     * @return type
+     * @param int|null $val
+     * @param bool $raw
+     *
+     * @return bool|float|int|string
      */
-    static function modRewrite() {
-	if (function_exists('apache_get_modules')) {
+    static function maxUploadFilesize(int $val = null, bool $raw = false)
+    {
+        $getKBytes = function($raw) {
+            $values = ['k' => 1, 'm' => 1024, 'g' => pow(1024, 2)];
+            $match = [];
+
+            if (preg_match("/(\d+)(\w)/", strtolower($raw), $match, null, 0)) {
+                $multiplier = key_exists($match[2], $values) ? $values[$match[2]] : 0;
+                return $match[1] * $multiplier;
+            }
+
+            return 0;
+        };
+
+        if ($val === null) {
+            if (!preg_match("/(\d+)(\w)/", strtolower($val))) {
+                return false;
+            }
+
+            ini_set('post_max_size', $val);
+            ini_set('upload_max_filesize', $val);
+        }
+
+        $post_filesize = $getKBytes(ini_get('post_max_size'));
+        $upload_filesize = $getKBytes(ini_get('upload_max_filesize'));
+
+        if (($post_filesize < 1 && $upload_filesize) || ($upload_filesize < $post_filesize && $upload_filesize > 0)) {
+            return $raw ? ini_get('upload_max_filesize') : $upload_filesize;
+        }
+
+        return $raw ? ini_get('post_max_size') : $post_filesize;
+    }
+
+    static function isRewriteEnabled(): bool
+    {
+        if (function_exists('apache_get_modules')) {
             $modules = apache_get_modules();
             return in_array('mod_rewrite', $modules);
-        } else {
-            if (preg_match("/nginx/", filter_input(INPUT_SERVER, 'SERVER_SOFTWARE'))) {
-                return true;
-            }
-            return getenv('HTTP_MOD_REWRITE') == 'On';
         }
+
+        return getenv('HTTP_MOD_REWRITE') == 'On';
+    }
+
+    static function isHttpsEnabled(): bool
+    {
+        $appConfig = new Config('default', ['https' => false]);
+        $serverConfig = filter_input(INPUT_SERVER, 'HTTPS');
+
+        return $appConfig->get('https') || 'on' == $serverConfig;
+    }
+
+    /**
+     * @param string $name
+     * @param mixed|null $default
+     *
+     * @return mixed|null
+     */
+    static function getServerParameter(string $name, $default = null)
+    {
+        $value = filter_input(INPUT_SERVER, $name);
+
+        if (empty(trim($value))) {
+            return $default;
+        }
+
+        return $value;
+    }
+
+    static function getPort(): int
+    {
+        $config = new Config('default', ['port' => 0]);
+        $port = $config->get('port');
+
+        if ($port > 0) {
+            return (int)$port;
+        }
+
+        if (preg_match("/:(\d+)$/", filter_input(INPUT_SERVER, 'HTTP_HOST'), $matches)) {
+            return (int)$matches[1];
+        }
+
+        return (int)Application::getServerParameter(
+            'SERVER_PORT',
+            Application::isHttpsEnabled() ? 443 : 80
+        );
+    }
+
+    public static function getHost(): string
+    {
+        $config = new Config('default', ['hostname' => '']);
+        $host = $config->get('hostname');
+
+        if (!empty($host)) {
+            return $host;
+        }
+
+        $host = preg_replace('/:\d+$/', '', filter_input(INPUT_SERVER, 'HTTP_HOST'));
+
+        return $host ?: getenv('SERVER_ADDR');
+    }
+
+    public static function backUrl(): ?Url
+    {
+        $url = new Url(filter_input(INPUT_SERVER, 'HTTP_REFERER'));
+
+        if (self::getHost() === $url->getHost()) {
+            return $url;
+        }
+
+        return null;
+    }
+
+    public static function getCurrentPath(): string
+    {
+        return Application::getServerParameter('REQUEST_URI', Globals::optional('q'));
+    }
+
+    public static function setMemoryLimit(int $megabytes)
+    {
+        ini_set('memory_limit', sprintf('%dM', $megabytes));
+    }
+
+    public static function runCommand(array $argv)
+    {
+        Application::setMode(self::MODE_CLI);
+        Events::triggerEvent('Init');
+
+        unset($argv[0]);
+
+        $name = array_shift($argv);
+
+        if (empty($name)) {
+            echo 'No command name provided, example: ./run cache:purge' . PHP_EOL;
+
+            exit(1);
+        }
+
+        $path = preg_split('@:@', $name, null, PREG_SPLIT_NO_EMPTY);
+        $class = implode('', $path) . 'command';
+        $file = new Path('application/commands/' . implode('_', $path)) . '.php';
+
+        if (!file_exists($file)) {
+            echo $name . ' not found!' . PHP_EOL;
+
+            exit(1);
+        }
+
+        require_once $file;
+
+        try {
+            $command = new $class(self::getContainer(), $argv);
+        } catch (InvalidArgumentException $exception) {
+            echo $exception->getMessage() . PHP_EOL;
+
+            exit(1);
+        }
+
+        if (!$command instanceof Command) {
+            throw new RuntimeException('Wrong class loaded, expected a "Command" class instead');
+        }
+
+        exit($command->run());
+    }
+
+    static function start()
+    {
+        Events::triggerEvent('Init');
+
+        $config = new Config('default', ['lang' => 'en']);
+        $query = filter_var(Globals::optional('q'), FILTER_SANITIZE_URL);
+        $url = preg_replace('@(^\/+|(\/)\/+)@', "$2", $query, -1);
+        $request = $url ? preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY) : [];
+
+        if (preg_match('@\.\w+$@', $query, $matches)) {
+            $file = new Path($query);
+
+            if (!file_exists($file)) {
+                http_response_code(404);
+                Application::stop();
+            }
+        }
+
+        Language::setDefaultLanguageCode(rtrim(
+            empty($_REQUEST['l']) ? $config->get('lang') : $_REQUEST['l'],
+            '/'
+        ));
+
+        if (!self::findRoute($url)) {
+            self::autoRoute($request);
+        }
+
+        Events::triggerEvent('Start', [
+            'controller' => self::$controllerName,
+            'action'     => self::$actionName,
+            'params'     => self::$requestParameters
+        ]);
+
+        if (false === ($response = self::processRequest())) {
+            $content = null;
+
+            if (Debug::isOn()) {
+                $content = sprintf(
+                    '404: Controller "%s" or action "%s" does not exist.',
+                    self::$controllerName,
+                    self::$actionName
+                );
+            }
+
+            $response = new Response($content, Response::STATUS_NOT_FOUND);
+        }
+
+        Events::triggerEvent('ResponseReady', [
+            'response' => $response
+        ]);
+
+        if (!headers_sent()) {
+            if ($response instanceof Response) {
+                http_response_code($response->getResponseCode());
+            }
+        }
+
+        echo $response;
+
+        Application::stop();
+    }
+
+    public static function stop(array $context = [])
+    {
+        Events::triggerEvent('Stop', $context);
+
+        exit();
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return Controller
+     */
+    public static function getController(string $name): ?Controller
+    {
+        $path = new Path(sprintf('application/controllers/%s.php', $name));
+
+        if (file_exists($path)) {
+            require_once $path;
+            $className = sprintf('%sController', ucfirst($name));
+
+            if (class_exists($className)) {
+                $controller = new $className(self::getContainer());
+
+                if ($controller instanceof Controller) {
+                    return $controller;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $request full request string
+     *
+     * @return boolean
+     *
+     * @throws RuntimeException
+     */
+    private static function findRoute(string $request): bool
+    {
+        $config = new Config('routing', ['routes']);
+        $matches = [];
+
+        foreach($config->get('routes') as $pattern => $route) {
+            if (empty($route->controller)) {
+                throw new RuntimeException(
+                    'Route must contain controller name',
+                    'route_undefined_controller',
+                    [
+                        'pattern' => $pattern,
+                        'route' => $request
+                    ]
+                );
+            }
+
+            if (!preg_match("%^{$pattern}%ui", $request, $matches)) {
+                continue;
+            }
+
+            if (empty($route->params)) {
+                $route->params = [];
+            }
+
+            if (empty($route->action)) {
+                $route->action = 'default';
+            }
+
+            self::$controllerName = strtolower($route->controller);
+            self::$actionName = strtolower($route->action);
+
+            unset($matches[0]);
+            self::$requestParameters = self::prepareRequestParameters($route->params ?: $matches, $request);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $params string|array
+     *
+     * @param string|null $request
+     *
+     * @return array
+     */
+    private static function prepareRequestParameters($params, string $request = null): array
+    {
+        if (is_array($params)) {
+            return array_values($params);
+        }
+
+        if (!preg_match('/\/$/', $params)) {
+            $params .= '\/';
+        }
+
+        $params = "%{$params}$%ui";
+        $matches = [];
+
+        if (preg_match($params, $request, $matches, null)) {
+            unset($matches[0]);
+
+            return array_values($matches);
+        }
+
+        return [];
+    }
+
+    private static function autoRoute(array $request)
+    {
+        self::$controllerName = !empty($request[0]) ? strtolower($request[0]) : 'index';
+        self::$actionName = !empty($request[1]) ? strtolower($request[1]) : 'default';
+
+        if (count($request) > 2) {
+            for ($i = 2; $i < count($request); $i++) {
+                self::$requestParameters[] = $request[$i];
+            }
+        }
+    }
+
+    /**
+     * @return mixed|false
+     *
+     * @throws RuntimeException
+     */
+    private static function processRequest()
+    {
+        $controller = self::getController(self::$controllerName);
+
+        if (null !== $controller) {
+            $action = sprintf('action%s', self::$actionName);
+
+            if (method_exists($controller, $action)) {
+                return call_user_func_array([$controller, $action], self::$requestParameters);
+            }
+        }
+
+        return false;
     }
 }

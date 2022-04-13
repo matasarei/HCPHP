@@ -1,9 +1,18 @@
 {
-    "e_route_controller_undefined": "Controller is undefined for route %s",
-    "e_config_val_undefined" : "Undefined value %s in config %s",
-    "e_database_instance_exist": "Database %s is already registered",
-    "e_undefined_table_name": "Undefined table name",
-    "e_uncompatible_database_instance": "Uncompatible database type",
-    
-    "title" : "Welcome to %s!"
+  "email": "E-Mail",
+  "password": "Password",
+  "remember_me": "Remember me",
+  "login": "Login",
+  "logout": "Logout",
+  "Invalid credentials": "Invalid credentials",
+  "search": "Search",
+  "Submit": "Submit",
+  "Cancel": "Cancel",
+  "View": "View",
+  "no_items_found": "No items found.",
+  "Get": "Get",
+  "Edit": "Edit",
+  "Delete": "Delete",
+  "yes": "yes",
+  "no": "no"
 }

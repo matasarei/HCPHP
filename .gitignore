@@ -1,5 +1,6 @@
-.project
 .idea
+.mysql
 nbproject
+log
 cache
-var
+shared/dymanicdb

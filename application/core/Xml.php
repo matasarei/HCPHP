@@ -1,56 +1,51 @@
 <?php
-/**
- * HCPHP
- *
- * @package    hcphp
- * @copyright  2014 Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20151123
- */
 
 namespace core;
 
-class Xml {
-    
-    /**
-     * Satic only
-     */
-    private function __construct() { }
-    private function __clone() { }
-    
-    static function tag($name, $content = null, $attribs = []) {
-        $string = ["<{$name}"];
-        //attribs
-        if ($attribs) {
-            array_push($string, " ", self::_makeAttribs($attribs));
+/**
+ * @package    hcphp
+ * @subpackage core
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class Xml
+{
+    static function tag(string $name, string $content = null, array $attributes = []): string
+    {
+        $string = [sprintf('<%s', $name)];
+
+        if ($attributes) {
+            array_push($string, ' ', self::prepareAttributes($attributes));
         }
-        //content
-        if ($content) {
-            $string[] = ">{$content}</{$name}>";
+
+        if ($content !== null) {
+            $string[] = sprintf('>%s</%s>', $content, $name);
         } else {
-            $string[] = " />";
+            $string[] = ' />';
         }
+
         return implode('', $string);
     }
-    
-    /**
-     * 
-     * @param type $attribs
-     * @return type
-     */
-    protected static function _makeAttribs($attribs) {
+
+    protected static function prepareAttributes(array $attributes): string
+    {
         $string = [];
-        foreach ($attribs as $name => $value) {
-            if (empty($value)) {
-                $string[] = " {$name} ";
-            } else {
-                is_array($value) && $value = implode(";", $value);
-                $value = preg_replace('/\"/', '\"', $value, -1);
-                //$value = addslashes($value);
-                $string[] = "{$name}=\"{$value}\"";
+
+        foreach ($attributes as $name => $value) {
+            if (empty($value) && !is_numeric($value)) {
+                $string[] = sprintf(' %s ', $name);
+
+                continue;
             }
+
+            if (is_array($value)) {
+                $value = implode(';', $value);
+            }
+
+            $value = preg_replace('/\"/', '\"', $value, -1);
+            $string[] = sprintf('%s="%s"', $name, $value);
         }
-        return implode(" ", $string);
+
+        return implode(' ', $string);
     }
-    
 }

@@ -1,7 +1,12 @@
+#HCPHP htaccess file
 Options -Indexes
 
 <IfModule mod_rewrite.c>
 RewriteEngine on
+
+# Fix TRACE method
+RewriteCond %{REQUEST_METHOD} ^TRACE
+RewriteRule .* - [F]
 
 # Fix base directory
 #RewriteBase /path/to/root
@@ -11,13 +16,15 @@ SetEnv HTTP_MOD_REWRITE 'On'
 
 # Adds slash to the end of url.
 RewriteCond %{REQUEST_URI} !\..*$
-RewriteRule ^(.*)([^/])$ %{REQUEST_SCHEME}://%{HTTP_HOST}/$1$2/ [L,R=301]
+RewriteRule ^(.*)([^/])$ http://%{HTTP_HOST}/$1$2/ [L,R=301]
 
-# Rewrite request for MVC.
+# Rewrite request for app.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(([a-z]{2})/)?(.*)$ index.php?q=$3&l=$2 [L,QSA]
+</IfModule>
 
-ErrorDocument 403 /403/
-ErrorDocument 404 /404/
-ErrorDocument 500 /500/
+# Additional security
+<IfModule mod_headers.c>
+    Header set X-Frame-Options DENY
+    Header set X-Content-Type-Options nosniff
 </IfModule>

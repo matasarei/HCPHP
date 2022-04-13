@@ -1,57 +1,49 @@
 <?php
-/**
- * Init script
- *
- * @package    hcphp
- * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20160526
- */
-
-require_once __DIR__ . '/core/Autoloader.php';
 
 use core\Autoloader;
+use core\Config;
+use core\Debug;
+use core\Globals;
+use core\Path;
 
-///
-// init autoloader.
-///
+require_once __DIR__ . '/core/Autoloader.php';
+spl_autoload_register('core\Autoloader::load');
+
 $loader = function($path, $class) {
     $path = "{$path}/{$class}.php";
+
     if (file_exists($path)) {
         require_once $path;
         return true;
     }
+
     return false;
 };
 Autoloader::add(__DIR__, $loader);
 Autoloader::add(__DIR__ . '/lib/', $loader);
 
-use core\Application,
-    core\Debug,
-    core\Path,
-    core\Config,
-    core\Globals;
-
-// init cli request.
-if (php_sapi_name() === 'cli') {
-    Application::initCLI($argv);
-}
-
-// init debug.
 Debug::init(E_ALL);
-// init path (set root dir).
-Path::init(dirname(__DIR__));
-// init globals interface.
+Path::init(dirname(__DIR__), 0775, 0664);
 Globals::init();
 
-// init debug.
-$default = new Config('default', ['debug' => 0]);
-$default->debug = is_numeric($default->debug) ? $default->debug : constant($default->debug);
+$default = new Config('default', ['debug' => 0, 'timezone' => '']);
+
+$debugMode = $default->get('debug');
+$default->debug = is_numeric($debugMode) ? $debugMode : constant($debugMode);
 Debug::mode($default->debug);
 
-///
-// global functions.
-///
-function x($var) {
+$path = new Path('application/lib/vendor/autoload.php');
+
+if (file_exists($path)) {
+    (include $path);
+}
+
+if (!$default->isEmpty('timezone')) {
+    date_default_timezone_set($default->get('timezone'));
+}
+
+// Globals.
+function x($var)
+{
     Debug::dump($var, true, debug_backtrace());
 }

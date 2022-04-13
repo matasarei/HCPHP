@@ -1,4 +1,7 @@
 {
     "debug": "E_ALL",
-    "lang" : "en"
+    "role": "user",
+    "loginTime": 2592000,
+    "lang": "en",
+    "timezone": "Europe/Kiev"
 }

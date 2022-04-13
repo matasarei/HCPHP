@@ -1,237 +1,285 @@
 <?php
-/**
- * HCPHP
- * URL paser / generator
- *
- * @package    hcphp
- * @subpackage core
- * @author     Yevhen Matasar <matasar.ei@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    20161020
- */
 
 namespace core;
 
 /**
- * URL
+ * @package    hcphp
+ * @subpackage core
+ * @copyright  Yevhen Matasar <matasar.ei@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class Url extends Object {
+class Url extends MagicObject
+{
+    const SCHEME_HTTPS = 'https';
+    const SCHEME_HTTP = 'http';
 
-    protected $_params = [];
-    protected $_host;
-    protected $_scheme;
-    protected $_port;
-    protected $_path;
-    protected $_anchor;
+    protected $params = [];
 
     /**
-     * @param string $path Path
-     * @param array $params Url params
-     * @param string $anchor Anchor
+     * @var string
      */
-    public function __construct($path = '', array $params = [], $anchor = null) {
-        
+    protected $host;
+
+    /**
+     * @var string
+     */
+    protected $scheme = self::SCHEME_HTTP;
+
+    /**
+     * @var int
+     */
+    protected $port = 80;
+
+    /**
+     * @var string
+     */
+    protected $path;
+
+    /**
+     * @var string|null
+     */
+    protected $anchor;
+
+    /**
+     * @param Url|string $path
+     * @param array $params
+     * @param string|null $anchor
+     */
+    public function __construct($path = '', array $params = [], string $anchor = null)
+    {
         // Get current path.
         if ($path === true) {
-            // Current anchor is not avaliable at server side.
-            $request = filter_input(INPUT_SERVER, 'REQUEST_URI'); // no anchor here.
+            // Current anchor is not available at server side.
+            $request = Application::getCurrentPath(); // no anchor here.
             $path = ltrim(parse_url($request, PHP_URL_PATH), '/\\');
-            $this->_params = $this->parseParams($request);
+            $this->setParams($this->parseParams($request));
         } else {
             $path = ltrim($path, '/\\');
         }
 
-        $url = Filters::filter($path, Filters::URL);
-        if ($url) {
-            $this->_scheme = parse_url($url, PHP_URL_SCHEME);
-            $this->_host = parse_url($url, PHP_URL_HOST);
-            $this->_port = (int)parse_url($url, PHP_URL_PORT);
-            $this->_path = parse_url($url, PHP_URL_PATH);
-            $this->_anchor = parse_url($url, PHP_URL_FRAGMENT);
-            
-        } else {
-            $this->_path = (string)$path;
-            
-            $secured = filter_input(INPUT_SERVER, 'HTTPS');
-                    
-            if ($secured === 'on') {
-                $this->_scheme = 'https';
-                $this->_port = 443;
-            } else {
-                $this->_scheme = 'http';
-                $this->_port = 80;
-            }
-            
-            $host = filter_input(INPUT_SERVER, 'HTTP_HOST');
-            $this->_host = $host ? $host : getenv('SERVER_ADDR');
-        }
-        
-        $anchor && $this->_anchor = $anchor;
+        $url = filter_var($path, FILTER_VALIDATE_URL);
 
-        // Prepare URL params.
-        $this->_params = $this->parseParams($url);
-        foreach ($params as $name => $val) {
-            $this->addParam($name, $val);
+        if ($url) {
+            $this->scheme = parse_url($url, PHP_URL_SCHEME);
+            $this->host = parse_url($url, PHP_URL_HOST);
+            $this->setPort(parse_url($url, PHP_URL_PORT));
+            $this->setPath(parse_url($url, PHP_URL_PATH));
+            $this->anchor = parse_url($url, PHP_URL_FRAGMENT);
+
+        } else {
+            $this->path = (string)$path;
+
+            if (Application::isHttpsEnabled()) {
+                $this->scheme = self::SCHEME_HTTPS;
+            } else {
+                $this->scheme = self::SCHEME_HTTP;
+            }
+
+            $this->port = Application::getPort();
+            $this->host = Application::getHost();
         }
+
+        if (empty($this->host)) {
+            $this->host = 'localhost';
+        }
+
+        if (!empty($anchor)) {
+            $this->setAnchor($anchor);
+        }
+
+        $this->setParams(array_merge($this->parseParams($url), $params));
     }
-    
-    public static function parseParams($url) {
+
+    public static function parseParams(string $url): array
+    {
         $params_str = parse_url($url, PHP_URL_QUERY);
         $params = [];
+
         if ($params_str) {
-            foreach (preg_split("@&@", $params_str, -1, null) AS $p_fragment) {
-                $var = preg_split("@=@", $p_fragment, -1, null);
+            foreach (preg_split('@&(amp;)?@', $params_str, -1, null) AS $p_fragment) {
+                $var = preg_split('@=@', $p_fragment, -1, null);
                 $params[$var[0]] = empty($var[1]) ? null : $var[1];
             }
         }
+
         return $params;
     }
-    
-    /**
-     * To string magic convert
-     */
-    public function __toString() {
-        try {
-            return $this->make();
-        } catch (\Exception $ex) {
-            trigger_error($ex->getMessage());
-            return '';
+
+    public function make(): string
+    {
+        $url =  sprintf('%s://%s', $this->scheme, $this->host);
+
+        if (!in_array($this->port, [80, 443], true)) {
+            $url .= ":{$this->port}";
         }
-    }
-    
-    /**
-     * Make URL
-     * @return string URL
-     */
-    public function make() {
-        $url = "{$this->_scheme}://{$this->_host}";
-        if ($this->_port && !in_array($this->_port, [80, 443], true)) {
-            $url .= ":{$this->_port}";
-        }
-        
-        if (!file_exists(new Path($this->_path)) && !Application::modRewrite()) {
-            $url .= "/index.php?q={$this->_path}";
+
+        if (
+            filter_input(INPUT_SERVER, 'HTTP_HOST') === $this->host
+            && file_exists(new Path($this->path))
+            && Application::isRewriteEnabled()
+        ) {
+            $url .= '/index.php';
+            $this->params['q'] = $this->path;
         } else {
-            $url .= "/{$this->_path}";
+            $url .= '/' . $this->path;
         }
-        
-        if ($this->_params) {
-            $url = "{$url}?" . http_build_query($this->_params);
+
+        if ($this->params) {
+            $url = $url . '?' . http_build_query($this->params);
         }
-        
-        return $this->_anchor ? "{$url}#{$this->_anchor}" : $url;
+
+        return $this->anchor ? $url . '#' . $this->anchor : $url;
     }
-    
-    /**
-     * 
-     * @param type $val
-     */
-    public function setAnchor($val) {
-        $this->_anchor = trim($val);
-    } 
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getAnchor() {
-        return $this->_anchor;
+
+    public function setAnchor(string $val): self
+    {
+        $this->anchor = trim($val);
+
+        return $this;
     }
-    
-    /**
-     * 
-     * @param type $path
-     */
-    public function setPath($path) {
-        $this->_path = trim($path);
+
+    public function getAnchor(): ?string
+    {
+        return $this->anchor;
     }
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getPath() {
-        return $this->_path;
+
+    public function setPath(string $path): self
+    {
+        $this->path = preg_replace(
+            [
+                "/^\s*\/*(.*)\s*/",
+                "/[\/]+/"
+            ],
+            [
+                '$1',
+                '/'
+            ],
+            $path
+        );
+
+        return $this;
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function setPort(int $val = 0): self
+    {
+        if (empty($val)) {
+            $this->port = $this->scheme === self::SCHEME_HTTPS ? 443 : 80;
+
+            return $this;
+        }
+
+        $this->port = $val;
+
+        return $this;
+    }
+
+    public function getPort(): int
+    {
+        return $this->port;
+    }
+
+    public function setScheme(string $val): self
+    {
+        $this->scheme = trim($val);
+
+        return $this;
+    }
+
+    public function getScheme(): string
+    {
+        return $this->scheme;
+    }
+
+    public function setHostname(string $hostname): self
+    {
+        $this->host = trim($hostname);
+
+        return $this;
+    }
+
+    public function getHost(): string
+    {
+        return $this->host;
+    }
+
+    public function setParams(array $params): self
+    {
+        $this->params = [];
+
+        foreach ($params as $name => $val) {
+            $this->addParam($name, $val);
+        }
+
+        return $this;
     }
 
     /**
-     * 
-     * @param type $val
+     * Set or rewrite optional url param
+     *
+     * @param string $name Name
+     * @param mixed $val Param value
      */
-    public function setPort($val) {
-        $this->_port = (int)$val;
+    public function addParam(string $name, $val): self
+    {
+        $this->params[urldecode($name)] = is_string($val) ? urldecode($val) : $val;
+
+        return $this;
     }
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getPort() {
-        return $this->_port;
+
+    public function getParams(): array
+    {
+        return $this->params;
     }
-    
-    /**
-     * 
-     * @param type $val
-     */
-    public function setScheme($val) {
-        $this->_scheme = trim($val);
+
+    public function getParam(string $name): ?string
+    {
+        if (key_exists($name, $this->params)) {
+            return $this->params[$name];
+        }
+
+        return null;
     }
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getScheme() {
-        return $this->_scheme;
+
+    public function removeParam(string $name): self
+    {
+        unset($this->params[$name]);
+
+        return $this;
     }
-    
+
     /**
-     * 
-     * @param type $val
+     * @return false|int
      */
-    public function setHost($val) {
-        $this->_host = trim($val);
+    public function isImage()
+    {
+        return preg_match('/.(png|jpeg|jpg|gif|bmp|webp|svg)$/i', $this->path);
     }
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getHost() {
-        return $this->_host;
+
+    public function getFileName(): ?string
+    {
+        if (preg_match("/([\w]+\.[a-z]+)$/Uui", $this->path, $matches, null)) {
+            return array_shift($matches);
+        }
+
+        return null;
     }
-    
-    /**
-     * 
-     * @param array $params
-     */
-    public function setParams(array $params) {
-        $this->_params = $params;
-    } 
-    
-    /**
-     * 
-     * @param type $name
-     * @param type $val
-     */
-    public function addParam($name, $val) {
-        $this->_params[$name] = $val;
+
+    public function getExtension(): ?string
+    {
+        if (preg_match("/\.([a-z]+)$/i", $this->path, $matches, null)) {
+            return array_shift($matches);
+        }
+
+        return null;
     }
-    
-    /**
-     * 
-     * @return type
-     */
-    public function getParams() {
-        return $this->_params;
-    }
-    
-    /**
-     * 
-     * @param type $name
-     */
-    public function removeParam($name) {
-        unset($this->_params[$name]);
+
+    public function __toString()
+    {
+        return $this->make();
     }
 }
