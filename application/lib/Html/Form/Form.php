@@ -42,6 +42,7 @@ class Form implements HtmlInterface, TemplateAware
         }
 
         $this->validator = $validator ?? new Validator();
+        $this->sessionKey = Globals::get('PHPSESSID');
     }
 
     public function addField(Field $field): self

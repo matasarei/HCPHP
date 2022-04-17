@@ -115,8 +115,8 @@ class Url extends MagicObject
 
         if (
             filter_input(INPUT_SERVER, 'HTTP_HOST') === $this->host
-            && file_exists(new Path($this->path))
-            && Application::isRewriteEnabled()
+            && !file_exists(new Path($this->path))
+            && !Application::isRewriteEnabled()
         ) {
             $url .= '/index.php';
             $this->params['q'] = $this->path;

@@ -12,6 +12,10 @@ use InvalidArgumentException;
  */
 final class Path extends MagicObject
 {
+    const TYPE_ALL = "a";
+    const TYPE_DIRECTORY = 'd';
+    const TYPE_FILE = 'f';
+
     /**
      * @var string
      */
@@ -195,5 +199,37 @@ final class Path extends MagicObject
         $info = finfo_open(FILEINFO_MIME_TYPE);
 
         return finfo_file($info, (string)$this);
+    }
+
+    public function getList(string $type = self::TYPE_ALL, bool $randomize = false): ?Collection
+    {
+        $path = (string)$this;
+
+        if (!is_dir($path) || !is_readable($path)) {
+            return null;
+        }
+
+        $result = scandir($path);
+        $items = [];
+
+        foreach ($result as $name) {
+            if (preg_match("/^\.+$/", $name)) {
+                continue;
+            }
+
+            $path = new Path("{$this->path}/{$name}");
+            $is_dir = is_dir($path);
+            if (($type === self::TYPE_DIRECTORY && !$is_dir) || ($type === self::TYPE_FILE && $is_dir)) {
+                continue;
+            }
+
+            $items[] = $path;
+        }
+
+        if ($randomize) {
+            shuffle($items);
+        }
+
+        return new Collection($items);
     }
 }

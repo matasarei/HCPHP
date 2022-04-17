@@ -84,6 +84,10 @@ final class Debug
             
             self::_print(sprintf("[E] %s\n", $msg) . self::flush());
         }
+
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
     }
 
     static function dump($val, bool $export = true, array $backtrace = [])

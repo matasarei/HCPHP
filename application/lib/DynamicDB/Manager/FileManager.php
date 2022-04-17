@@ -27,7 +27,7 @@ final class FileManager
 
             $path = new Path(
                 sprintf(
-                    'shared/dymanicdb/%d/%s.%s',
+                    'shared/dynamicdb/%d/%s.%s',
                     $dynamicEntity->getId(),
                     $field->getName(),
                     pathinfo($file->getName(), PATHINFO_EXTENSION)

@@ -112,7 +112,7 @@ class EntityMapper implements MapperInterface
 
         $path = new Path(
             sprintf(
-                'shared/dymanicdb/%d/%s.%s',
+                'shared/dynamicdb/%d/%s.%s',
                 $id,
                 $name,
                 pathinfo($value, PATHINFO_EXTENSION)
