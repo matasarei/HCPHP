@@ -116,7 +116,7 @@ class FileUploadValidator
     /**
      * Bytes read per pass when scanning for the markers above.
      */
-    private const SCAN_CHUNK_SIZE = 65536;
+    const SCAN_CHUNK_SIZE = 65536;
 
     /**
      * @var int
@@ -154,21 +154,39 @@ class FileUploadValidator
             throw new InvalidFileTypeException(sprintf('Unsupported file type ".%s"', $extension));
         }
 
-        if ($file->getSize() > $this->maxFileSize) {
+        // Anything already in storage was checked on the way in, and its recorded path may
+        // no longer resolve. Only freshly uploaded files get their bytes inspected.
+        if (!$file->isTemporary()) {
+            $this->assertWithinSizeLimit($file->getSize());
+
+            return;
+        }
+
+        // Refuse rather than wave through: a fresh upload we cannot read is one we cannot
+        // check, and the safe direction for a security control is closed.
+        if (!is_readable($file->getPath())) {
+            throw new InvalidFileTypeException('Uploaded file could not be read');
+        }
+
+        // Measure the file instead of believing the File object. This method also runs as
+        // the last check before storage, where the object may have been assembled by a
+        // caller rather than by FileMapper.
+        $this->assertWithinSizeLimit((int)filesize($file->getPath()));
+        $this->assertDetectedTypeIsAllowed($file);
+        $this->assertNotExecutable($file);
+        $this->assertContainsNoScript($file);
+    }
+
+    /**
+     * @throws InvalidFileTypeException
+     */
+    private function assertWithinSizeLimit(int $size): void
+    {
+        if ($size > $this->maxFileSize) {
             throw new InvalidFileTypeException(
                 sprintf('File is larger than the %d byte limit', $this->maxFileSize)
             );
         }
-
-        // Anything already in storage was checked on the way in, and its recorded path may
-        // no longer resolve. Only freshly uploaded files get their bytes inspected.
-        if (!$file->isTemporary() || !is_readable($file->getPath())) {
-            return;
-        }
-
-        $this->assertDetectedTypeIsAllowed($file);
-        $this->assertNotExecutable($file);
-        $this->assertContainsNoScript($file);
     }
 
     /**

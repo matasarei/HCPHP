@@ -101,6 +101,34 @@ class FileManagerTest extends TestCase
         );
     }
 
+    public function testNothingIsStoredWhenALaterFieldIsRefused(): void
+    {
+        // Two file fields, the second unacceptable. The first must not already be on disk
+        // by the time the second is refused.
+        $table = (new Table('records', 'Records'))
+            ->addField(new Field('first_file', 'First', Field::TYPE_FILE))
+            ->addField(new Field('second_file', 'Second', Field::TYPE_FILE));
+
+        $entity = (new DynamicEntity())
+            ->set('first_file', $this->file('holiday.jpg', $this->jpeg()))
+            ->set('second_file', $this->file('shell.php', "<?php echo 'pwned';"))
+            ->setId(self::ENTITY_ID);
+
+        $manager = new FileManager($table, null, function (string $from, string $to): bool {
+            $this->moved[] = [$from, $to];
+
+            return true;
+        });
+
+        $this->expectException(InvalidFileTypeException::class);
+
+        try {
+            $manager->saveFiles($entity);
+        } finally {
+            self::assertSame([], $this->moved, 'A refused field must roll the whole save back.');
+        }
+    }
+
     public function testAlreadyStoredFileIsNotMovedAgain(): void
     {
         // Not temporary: this is a file read back from storage, not a fresh upload.

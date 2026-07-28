@@ -121,6 +121,45 @@ class FileUploadValidatorTest extends TestCase
     }
 
     /**
+     * The scan reads the file in chunks, so a marker lying across a chunk boundary is the
+     * case most likely to be missed by a careless rewrite.
+     *
+     * @dataProvider boundarySplitProvider
+     */
+    public function testMarkerSplitAcrossAChunkBoundaryIsCaught(int $bytesInFirstChunk): void
+    {
+        $head = $this->jpeg();
+        $padding = FileUploadValidator::SCAN_CHUNK_SIZE - $bytesInFirstChunk - strlen($head);
+        $contents = $head . str_repeat("\x00", $padding) . '<?php' . str_repeat("\x00", 64);
+
+        $this->expectException(InvalidFileTypeException::class);
+
+        $this->validator->validate($this->upload('holiday.jpg', $contents));
+    }
+
+    public function boundarySplitProvider(): array
+    {
+        // How many bytes of "<?php" land in the first chunk: 1 through 4.
+        return [
+            '1 byte before the split'  => [1],
+            '2 bytes before the split' => [2],
+            '3 bytes before the split' => [3],
+            '4 bytes before the split' => [4],
+        ];
+    }
+
+    public function testMarkerFarBeyondTheFirstChunkIsCaught(): void
+    {
+        // A head-only scan would wave this through. Payloads are usually appended after
+        // the real image data, which is exactly here.
+        $contents = $this->jpeg() . str_repeat("\x00", FileUploadValidator::SCAN_CHUNK_SIZE * 3) . '<?php';
+
+        $this->expectException(InvalidFileTypeException::class);
+
+        $this->validator->validate($this->upload('holiday.jpg', $contents));
+    }
+
+    /**
      * @dataProvider executableBinaryProvider
      */
     public function testExecutableBinariesAreRejected(string $magic): void
@@ -157,6 +196,29 @@ class FileUploadValidatorTest extends TestCase
         $this->expectException(InvalidFileTypeException::class);
 
         $validator->validate($this->upload('big.jpg', $this->jpeg(str_repeat('x', 4096))));
+    }
+
+    public function testSizeIsMeasuredOnDiskNotTakenFromTheFileObject(): void
+    {
+        // A File can be assembled by a caller rather than by FileMapper, and then its
+        // declared size is just another claim.
+        $path = $this->write('big.jpg', $this->jpeg(str_repeat('x', 4096)));
+        $validator = new FileUploadValidator(1024);
+
+        $this->expectException(InvalidFileTypeException::class);
+
+        $validator->validate(new File('big.jpg', 'image/jpeg', $path, 0, true));
+    }
+
+    public function testUnreadableUploadIsRefusedRatherThanWavedThrough(): void
+    {
+        // An upload we cannot open is one we cannot inspect. Accepting it would skip the
+        // MIME, executable and content checks entirely.
+        $this->expectException(InvalidFileTypeException::class);
+
+        $this->validator->validate(
+            new File('holiday.jpg', 'image/jpeg', $this->dir . '/never-written.jpg', 10, true)
+        );
     }
 
     // --- files that must keep working ----------------------------------------------------

@@ -40,6 +40,11 @@ final class FileManager
      */
     public function saveFiles(DynamicEntity $dynamicEntity): void
     {
+        $pending = [];
+
+        // Every file is checked before any of them is stored: a record can carry several
+        // file fields, and refusing the second one after moving the first would leave the
+        // record half written.
         foreach ($this->table->getFields() as $field) {
             $file = $dynamicEntity->get($field->getName());
 
@@ -51,14 +56,20 @@ final class FileManager
             // File by hand. Nothing reaches the storage directory without passing here.
             $this->validator->validate($file);
 
-            $path = new Path(
-                sprintf(
-                    'shared/dynamicdb/%d/%s.%s',
-                    $dynamicEntity->getId(),
-                    $field->getName(),
-                    $this->getStoredExtension($file)
-                )
-            );
+            $pending[] = [
+                $file,
+                new Path(
+                    sprintf(
+                        'shared/dynamicdb/%d/%s.%s',
+                        $dynamicEntity->getId(),
+                        $field->getName(),
+                        $this->getStoredExtension($file)
+                    )
+                ),
+            ];
+        }
+
+        foreach ($pending as list($file, $path)) {
             $path->mkpath();
 
             ($this->mover)($file->getPath(), (string)$path);
