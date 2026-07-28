@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         failOnWarning="true">
+    <!--
+        The supported baseline is PHP 7.4 (the version in docker/fpm), where the suite runs
+        silently. It also passes on PHP 8.2-8.4, but there it prints pre-existing deprecation
+        notices from core\Collection and from implicitly-nullable parameters. Those are a
+        separate, tracked piece of work (see .tasks, finding C2). They are left visible on
+        purpose rather than suppressed here, so failOnRisky and beStrictAboutOutputDuringTests
+        stay off until they are fixed.
+    -->
+    <testsuites>
+        <testsuite name="HCPHP">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <coverage>
+        <include>
+            <directory suffix=".php">application/core</directory>
+            <directory suffix=".php">application/lib/UserBundle</directory>
+        </include>
+    </coverage>
+</phpunit>

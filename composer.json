@@ -12,13 +12,29 @@
   "minimum-stability": "dev",
   "prefer-stable": true,
   "config": {
-    "vendor-dir": "application/lib/vendor"
+    "vendor-dir": "application/lib/vendor",
+    "platform": {
+      "php": "7.4"
+    }
   },
   "require": {
-    "php": ">=7.1",
+    "php": ">=7.4",
     "ext-json": "*",
     "ext-mbstring": "*",
     "ext-pdo": "*",
     "ext-fileinfo": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.6",
+    "ext-pdo_sqlite": "*"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "test-coverage": "phpunit --coverage-text"
   }
 }

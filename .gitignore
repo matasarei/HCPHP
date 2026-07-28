@@ -4,3 +4,8 @@ nbproject
 log
 cache
 shared/dynamicdb
+.tasks
+application/lib/vendor
+.phpunit.result.cache
+coverage
+docs

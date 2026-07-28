@@ -2,6 +2,7 @@
 
 namespace core;
 
+use InvalidArgumentException;
 use PDO;
 use PDOStatement;
 
@@ -353,12 +354,25 @@ class DatabaseSQL implements DatabaseInterface
                 foreach($value as $key => $val) {
                     $sth->bindValue(sprintf(':%s%s', $name, $key), $val);
                 }
+            } elseif ($value instanceof Like) {
+                $sth->bindValue(':' . $name, $value->getPattern());
             } else {
                 $sth->bindValue(':' . $name, $value);
             }
         }
     }
 
+    /**
+     * Compile a condition array into SQL predicates.
+     *
+     * The operator is chosen by the value's *type*, never by its contents: an array
+     * means IN, a Like means LIKE, anything else means `=`. A plain string is matched
+     * literally even when it contains `%` or `_`.
+     *
+     * @param array $conditions
+     *
+     * @return array
+     */
     private function prepareConditions(array $conditions): array
     {
         $prepared = [];
@@ -369,12 +383,23 @@ class DatabaseSQL implements DatabaseInterface
                 $inConditions = [];
 
                 foreach ($value as $key => $val) {
+                    if ($val instanceof Like) {
+                        throw new InvalidArgumentException(
+                            sprintf('LIKE is not supported inside an IN condition ("%s")', $name)
+                        );
+                    }
+
                     $inConditions[] = sprintf(':%s%s', $name, $key);
                 }
 
                 $prepared[] = sprintf('%s IN (%s)', $name, implode(', ', $inConditions));
-            } elseif (strpos($value, '%') !== false) {
-                $prepared[] = sprintf('`%s` LIKE :%s', $name, $name);
+            } elseif ($value instanceof Like) {
+                $prepared[] = sprintf(
+                    "`%s` LIKE :%s ESCAPE '%s'",
+                    $name,
+                    $name,
+                    Like::ESCAPE_CHARACTER
+                );
             } else {
                 $prepared[] = sprintf('`%s` = :%s', $name, $name);
             }
