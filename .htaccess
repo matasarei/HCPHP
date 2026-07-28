@@ -8,6 +8,10 @@ RewriteEngine on
 RewriteCond %{REQUEST_METHOD} ^TRACE
 RewriteRule .* - [F]
 
+# Uploaded files are reached through the application, never by URL. This has to come before
+# the app rewrite below, which lets any request matching a real file through to Apache.
+RewriteRule ^shared/ - [F,L]
+
 # Fix base directory
 #RewriteBase /path/to/root
 
