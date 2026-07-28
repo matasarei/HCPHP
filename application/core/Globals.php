@@ -10,8 +10,20 @@ namespace core;
  */
 final class Globals
 {
+    /**
+     * SameSite policy applied to every cookie this class writes, including the session
+     * cookie. Lax keeps the cookie off cross-site POSTs and subresource loads while still
+     * letting someone who follows a link from elsewhere arrive logged in.
+     */
+    const COOKIE_SAMESITE = 'Lax';
+
     public static function init()
     {
+        // On an ordinary login the auth key lives in the session, so PHPSESSID is the cookie
+        // that actually carries the user's identity. It must be flagged before the session
+        // starts -- afterwards is too late.
+        session_set_cookie_params(self::getSessionCookieOptions(Application::isHttpsEnabled()));
+
         session_start();
     }
 
@@ -20,9 +32,54 @@ final class Globals
         session_unset();
 
         foreach ($params as $name) {
-            setcookie($name, null, -1, '/');
+            // Expiring a cookie only works when the flags and path match the ones it was
+            // written with; otherwise the browser treats it as a different cookie.
+            setcookie($name, '', self::getCookieOptions(1, Application::isHttpsEnabled()));
             unset($_COOKIE[$name]);
         }
+    }
+
+    /**
+     * Attributes applied to every cookie written here.
+     *
+     * Split out from the setcookie() calls because setcookie() cannot be observed from a
+     * test; this part is pure and pinned by unit tests, and the header itself is checked
+     * over HTTP.
+     *
+     * @param int $expires Unix timestamp, or 0 for a session cookie
+     * @param bool $secure Whether the site is served over HTTPS
+     *
+     * @return array
+     */
+    public static function getCookieOptions(int $expires, bool $secure): array
+    {
+        return [
+            'expires' => $expires,
+            'path' => '/',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => self::COOKIE_SAMESITE,
+        ];
+    }
+
+    /**
+     * The same flags, in the shape session_set_cookie_params() expects.
+     *
+     * It does not take the same array as setcookie(): the expiry key is named "lifetime" and
+     * is a duration rather than a timestamp, and passing "expires" raises a warning and is
+     * ignored, leaving the session cookie unflagged.
+     *
+     * @param bool $secure Whether the site is served over HTTPS
+     *
+     * @return array
+     */
+    public static function getSessionCookieOptions(bool $secure): array
+    {
+        $options = self::getCookieOptions(0, $secure);
+        unset($options['expires']);
+
+        // 0 = until the browser closes.
+        return ['lifetime' => 0] + $options;
     }
     
     /**
@@ -50,7 +107,11 @@ final class Globals
     {
         if ($cookies) {
             $_COOKIE[$name] = $value;
-            setcookie($name, $value, time() + $time, '/');
+            setcookie(
+                $name,
+                $value,
+                self::getCookieOptions(time() + $time, Application::isHttpsEnabled())
+            );
         } else {
             $_SESSION[$name] = $value;
         }
