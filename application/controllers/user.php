@@ -9,6 +9,7 @@ use core\View;
 use DynamicDB\Factory\DynamicRepositoryFactory;
 use DynamicDB\Repository\TableRepository;
 use Html\Form\Exception\InvalidDataException;
+use Html\Form\Exception\InvalidFormException;
 use UserBundle\Exception\InvalidCredentialsException;
 use UserBundle\Form\LoginFormFactory;
 use UserBundle\Repository\UserRepository;
@@ -104,7 +105,10 @@ class UserController extends Controller
 
                 Application::redirect(new Url('user'), Application::REDIRECT_TEMPORARY);
             }
-        } catch (InvalidCredentialsException | InvalidDataException $exception) {
+        } catch (InvalidCredentialsException | InvalidDataException | InvalidFormException $exception) {
+            // InvalidFormException is a rejected CSRF token. It reaches ordinary users when a
+            // login page has been left open long enough for the session to lapse, so it has
+            // to render as a message rather than escape as an unhandled exception.
             $view->set('error', $exception->getMessage());
         }
 

@@ -2,6 +2,7 @@
 
 namespace Html\Form;
 
+use core\Csrf;
 use core\Globals;
 use core\Template;
 use Html\Form\Exception\InvalidDataException;
@@ -42,7 +43,7 @@ class Form implements HtmlInterface, TemplateAware
         }
 
         $this->validator = $validator ?? new Validator();
-        $this->sessionKey = Globals::get('PHPSESSID');
+        $this->sessionKey = Csrf::getToken();
     }
 
     public function addField(Field $field): self
@@ -92,11 +93,11 @@ class Form implements HtmlInterface, TemplateAware
                 return null;
             }
 
-            if (
-                $this->sessionKey !== null
-                && $this->sessionKey !== Globals::optional(self::KEY_SESSION)
-            ) {
-                throw new InvalidFormException('Wrong session key provided');
+            // Only skipped when a caller has deliberately cleared the token with
+            // setSessionKey(null). By default a token is always present, so a submission
+            // without a matching one is refused rather than waved through.
+            if ($this->sessionKey !== null && !Csrf::isValid(Globals::optional(self::KEY_SESSION))) {
+                throw new InvalidFormException('Invalid or missing form token');
             }
         }
 

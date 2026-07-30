@@ -5,6 +5,7 @@
   "login": "Login",
   "logout": "Logout",
   "Invalid credentials": "Invalid credentials",
+  "Invalid or missing form token": "This form has expired. Please try again.",
   "search": "Search",
   "Submit": "Submit",
   "Cancel": "Cancel",
