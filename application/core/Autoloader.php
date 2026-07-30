@@ -41,13 +41,35 @@ final class Autoloader
 
     public static function load(string $class): bool
     {
-        foreach (self::$paths as $index => $path) {
-            $class = str_replace('\\', '/', $class);
-            $callback = self::$loaders[$index];
+        // Converted once. Reassigning $class inside the loop meant the second iteration
+        // worked on an already-converted name, which happened to be harmless only because
+        // the conversion is idempotent.
+        $relativePath = str_replace('\\', '/', $class);
 
-            if ($callback($path, $class)) {
+        foreach (self::$paths as $index => $path) {
+            // addPath() and addLoader() append to the two arrays independently, so an index
+            // may have a path and no loader of its own. Fall back rather than fail.
+            $callback = self::$loaders[$index] ?? [self::class, 'loadFile'];
+
+            if ($callback($path, $relativePath)) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Used for a path registered through addPath(), which carries no loader.
+     */
+    public static function loadFile(string $path, string $class): bool
+    {
+        $file = sprintf('%s/%s.php', rtrim($path, '/\\'), $class);
+
+        if (file_exists($file)) {
+            require_once $file;
+
+            return true;
         }
 
         return false;

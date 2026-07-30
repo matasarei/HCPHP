@@ -79,8 +79,11 @@ final class Cache
         }
 
         if ($type == self::CACHE_STATIC) {
-            $path = self::_getFile($name);
-            unlink($path);
+            $path = self::_getFile($name, false);
+
+            if (file_exists($path)) {
+                unlink($path);
+            }
 
             return;
         }
@@ -95,11 +98,46 @@ final class Cache
         return $cached ? (int)$cached->time : null;
     }
 
-    private static function _getFile(string $name): string
-    {
-        $path = new Path('cache/%s.tmp', $name);
+    /**
+     * Path of the file backing a static cache entry.
+     *
+     * This used to read new Path('cache/%s.tmp', $name). Path's second parameter is
+     * $validate, not a sprintf argument: the key was cast to a boolean, the %s was never
+     * substituted so every key shared one file, and the truthy $validate then made the
+     * constructor reject it as unreadable. Every CACHE_STATIC call threw.
+     */
+    /**
+     * Classes that may be reconstructed from a cache entry.
+     *
+     * The wrapper this class stores is a stdClass, and that is all HCPHP itself puts in the
+     * serialized caches. Unrestricted unserialize() on a file or session value is an object
+     * injection gadget, so anything else is refused by default.
+     *
+     * A project that caches its own entities in CACHE_SESSION or CACHE_STATIC has to add
+     * them here -- otherwise they come back as __PHP_Incomplete_Class.
+     *
+     * @var string[]
+     */
+    const UNSERIALIZE_ALLOWED_CLASSES = [stdClass::class];
 
-        if (!file_exists($path)) {
+    /**
+     * @param string $serialized
+     *
+     * @return mixed
+     */
+    private static function _unserialize(string $serialized)
+    {
+        return unserialize($serialized, ['allowed_classes' => self::UNSERIALIZE_ALLOWED_CLASSES]);
+    }
+
+    private static function _getFile(string $name, bool $create = true): string
+    {
+        // A key is a name, not a path. Anything that could climb out of the cache directory
+        // is flattened rather than trusted.
+        $safeName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $name);
+        $path = new Path(sprintf('cache/%s.tmp', $safeName));
+
+        if ($create && !file_exists($path)) {
             $path->mkpath(true);
         }
 
@@ -110,17 +148,24 @@ final class Cache
     {
         if ($type == self::CACHE_SESSION) {
             if (!empty($_SESSION['cache'][$name])) {
-                return unserialize($_SESSION['cache'][$name]);
+                return self::_unserialize($_SESSION['cache'][$name]);
             }
-            
+
         } elseif ($type == self::CACHE_STATIC) {
-            $file = self::_getFile($name);
+            // Reading must not create the file: _getFile() used to, so a miss left an empty
+            // file behind and the next read got '' instead of null.
+            $file = self::_getFile($name, false);
+
+            if (!is_readable($file)) {
+                return null;
+            }
+
             $cached = file_get_contents($file);
 
             if ($cached) {
-                return unserialize($cached);
+                return self::_unserialize($cached);
             }
-            
+
         } else {
             if (!empty(self::$cache[$name])) {
                 return self::$cache[$name];

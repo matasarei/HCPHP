@@ -409,13 +409,11 @@ final class Application
 
         foreach($config->get('routes') as $pattern => $route) {
             if (empty($route->controller)) {
+                // This used to pass a string as $code and an array as $previous, so a
+                // misconfigured route raised a TypeError about the exception constructor
+                // instead of saying which route was wrong.
                 throw new RuntimeException(
-                    'Route must contain controller name',
-                    'route_undefined_controller',
-                    [
-                        'pattern' => $pattern,
-                        'route' => $request
-                    ]
+                    sprintf('Route "%s" must name a controller', $pattern)
                 );
             }
 

@@ -26,23 +26,42 @@ class Config
         $this->timeModified = filemtime($path);
         
         foreach ($vars as $var => $default) {
-            if (is_numeric($var)) {
+            // A list entry ('name') means required; a map entry ('name' => $default) means
+            // optional, and $default may legitimately be null.
+            $required = is_numeric($var);
+
+            if ($required) {
                 $var = $default;
                 $default = null;
             }
-            $this->_set($config, $var, $default);
-        } 
+
+            $this->_set($config, $var, $default, $required);
+        }
     }
 
-    private function _set($data, $name, $default = null) 
+    /**
+     * @param object $data Decoded config file
+     * @param string $name
+     * @param mixed $default
+     * @param bool $required Whether the key must be present when no default was given
+     */
+    private function _set($data, $name, $default = null, bool $required = true)
     {
         if (isset($data->$name)) {
             $this->vars[$name] = $data->$name;
-        } else if($default !== null) {
-            $this->vars[$name] = $default;
-        } else {
-            throw new RuntimeException(sprintf("Can't set '%s'. Please check config file!", $name));
+
+            return;
         }
+
+        // A null default used to be indistinguishable from "no default", so a key could not
+        // be given null as its fallback -- which is why callers pass '' and 0 as stand-ins.
+        if (!$required) {
+            $this->vars[$name] = $default;
+
+            return;
+        }
+
+        throw new RuntimeException(sprintf("Can't set '%s'. Please check config file!", $name));
     }
     
     function getTimeModified()
