@@ -6,13 +6,26 @@ Started as a student project in 2014. The goal is to implement small but complet
 
 ## Setup
 ```shell
-docker-compose up -d
-docker-compose exec fpm sh
+# database.json and default.json hold per-deployment values and are not committed.
+cp application/config/database.json.sample application/config/database.json
+cp application/config/default.json.sample application/config/default.json
 
-./run user:create world@email.xyz World p@ssw0rd
-./run relations:add "test"
+docker compose up -d
+docker compose exec fpm composer install
+docker compose exec fpm sh
+
+php run user:create world@email.xyz World p@ssw0rd
+php run relations:add "test"
 ```
 http://localhost:8080/
+
+`default.json` ships with `debug` off. Turn it on locally with `"debug": "E_ALL"`; leaving it
+on in production renders exception traces and file paths into the page.
+
+## Tests
+```shell
+docker compose exec fpm ./application/lib/vendor/bin/phpunit
+```
 
 ## Core
 The `core` directory includes some core services such as:

@@ -1,0 +1,9 @@
+{
+    "driver": "mysql",
+    "host": "mysql",
+    "dbname": "hcphp",
+    "user": "user",
+    "pass": "CHANGE-ME",
+    "prefix": "",
+    "encoding": "utf8"
+}

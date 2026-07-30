@@ -1,7 +1,8 @@
 {
-    "debug": "E_ALL",
+    "debug": 0,
+    "https": false,
     "role": "user",
     "loginTime": 2592000,
     "lang": "en",
-    "timezone": "Europe/Kiev"
+    "timezone": "Europe/Kyiv"
 }

@@ -103,7 +103,8 @@ class FormBuilder
     private function makeInputFile(string $name, $default, Field $field): Input
     {
         return (new Input($name, $field->getDescription(), $default))
-            ->setPlaceholder(basename($default))
+            // No file stored yet means no default, so there is no name to show.
+            ->setPlaceholder(basename((string)$default))
             ->setType(Input::TYPE_FILE)
         ;
     }

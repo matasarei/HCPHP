@@ -1,4 +1,4 @@
-FROM mariadb:focal
+FROM mariadb:11
 
 ENV MYSQL_ALLOW_EMPTY_PASSWORD 1
 

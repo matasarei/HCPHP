@@ -96,8 +96,8 @@ class Url extends MagicObject
         $params = [];
 
         if ($params_str) {
-            foreach (preg_split('@&(amp;)?@', $params_str, -1, null) AS $p_fragment) {
-                $var = preg_split('@=@', $p_fragment, -1, null);
+            foreach (preg_split('@&(amp;)?@', $params_str, -1) AS $p_fragment) {
+                $var = preg_split('@=@', $p_fragment, -1);
                 $params[$var[0]] = empty($var[1]) ? null : $var[1];
             }
         }
@@ -262,7 +262,7 @@ class Url extends MagicObject
 
     public function getFileName(): ?string
     {
-        if (preg_match("/([\w]+\.[a-z]+)$/Uui", $this->path, $matches, null)) {
+        if (preg_match("/([\w]+\.[a-z]+)$/Uui", $this->path, $matches)) {
             return array_shift($matches);
         }
 
@@ -271,7 +271,7 @@ class Url extends MagicObject
 
     public function getExtension(): ?string
     {
-        if (preg_match("/\.([a-z]+)$/i", $this->path, $matches, null)) {
+        if (preg_match("/\.([a-z]+)$/i", $this->path, $matches)) {
             return array_shift($matches);
         }
 

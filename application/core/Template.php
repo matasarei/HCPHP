@@ -143,7 +143,7 @@ class Template
             preg_match_all("/(\!)?{{\s*(.*)\s*}}/Uus", $contents, $matches, PREG_SET_ORDER, 0);
 
             // explode to lines.
-            $lines = preg_split("/\n/", $contents, -1, null);
+            $lines = preg_split("/\n/", $contents, -1);
         }
 
         // process each shortcode.
@@ -168,7 +168,7 @@ class Template
             $match = preg_replace("/^\s*\/(.*)/", "end\$1", $match, -1);
 
             // get function name and params.
-            $params = preg_split("@\|@s", $match[2], -1, null);
+            $params = preg_split("@\|@s", $match[2], -1);
 
             // method name.
             $method = "parse{$params[0]}";

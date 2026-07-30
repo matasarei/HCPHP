@@ -17,10 +17,18 @@ class Config
     
     function __construct($config, array $vars)
     {
-        $path = new Path(
-            sprintf('application/config/%s.json', $config),
-            true
-        );
+        $path = new Path(sprintf('application/config/%s.json', $config));
+
+        if (!is_readable($path)) {
+            // database.json and default.json hold per-deployment values and are no longer
+            // committed, so a fresh checkout has only the samples.
+            throw new RuntimeException(sprintf(
+                'Config "%1$s" is missing. Copy application/config/%1$s.json.sample to '
+                . 'application/config/%1$s.json and fill it in.',
+                $config
+            ));
+        }
+
         $config = json_decode(file_get_contents($path));
         
         $this->timeModified = filemtime($path);

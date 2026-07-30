@@ -277,7 +277,7 @@ final class Application
             exit(1);
         }
 
-        $path = preg_split('@:@', $name, null, PREG_SPLIT_NO_EMPTY);
+        $path = preg_split('@:@', $name, -1, PREG_SPLIT_NO_EMPTY);
         $class = implode('', $path) . 'command';
         $file = new Path('application/commands/' . implode('_', $path)) . '.php';
 
@@ -311,7 +311,7 @@ final class Application
         $config = new Config('default', ['lang' => 'en']);
         $query = filter_var(Globals::optional('q'), FILTER_SANITIZE_URL);
         $url = preg_replace('@(^\/+|(\/)\/+)@', "$2", $query, -1);
-        $request = $url ? preg_split('@/@', $url, NULL, PREG_SPLIT_NO_EMPTY) : [];
+        $request = $url ? preg_split('@/@', $url, -1, PREG_SPLIT_NO_EMPTY) : [];
 
         if (preg_match('@\.\w+$@', $query, $matches)) {
             $file = new Path($query);
@@ -464,7 +464,7 @@ final class Application
         $params = "%{$params}$%ui";
         $matches = [];
 
-        if (preg_match($params, $request, $matches, null)) {
+        if (preg_match($params, $request, $matches)) {
             unset($matches[0]);
 
             return array_values($matches);

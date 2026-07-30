@@ -32,11 +32,41 @@ final class Path extends MagicObject
     function __construct(string $path = '', bool $validate = false)
     {
         $path = preg_replace('@[/\\\]@ui', DIRECTORY_SEPARATOR, ltrim($path, '/\\'));
-        $this->path = $path;
+        $this->path = self::normalise((string)$path);
 
         if ($validate && !is_readable($this)) {
             throw new InvalidArgumentException(sprintf('Wrong path or file is not readable (%s)', $path), 1);
         }
+    }
+
+    /**
+     * Resolve "." and ".." within the path itself.
+     *
+     * Leading slashes were stripped but ".." was not, so any value carrying one escaped the
+     * project root -- and Application::start() builds a Path directly from the query string.
+     * realpath() is no use here because the target often does not exist yet.
+     */
+    private static function normalise(string $path): string
+    {
+        $resolved = [];
+
+        foreach (explode(DIRECTORY_SEPARATOR, $path) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment === '..') {
+                // Climbing past the root is simply not possible, rather than an error: the
+                // result is the root itself.
+                array_pop($resolved);
+
+                continue;
+            }
+
+            $resolved[] = $segment;
+        }
+
+        return implode(DIRECTORY_SEPARATOR, $resolved);
     }
 
     /**
@@ -173,7 +203,7 @@ final class Path extends MagicObject
      */
     public function getFileName(): ?string
     {
-        if (preg_match("/([\w-?&;\.#~=\@\%\s]+\.[a-z]+)$/Uui", $this->path, $matches, null)) {
+        if (preg_match("/([\w-?&;\.#~=\@\%\s]+\.[a-z]+)$/Uui", $this->path, $matches)) {
             return urldecode(array_shift($matches));
         }
 

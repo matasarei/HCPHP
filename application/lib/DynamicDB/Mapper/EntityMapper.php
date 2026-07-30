@@ -115,7 +115,8 @@ class EntityMapper implements MapperInterface
                 'shared/dynamicdb/%d/%s.%s',
                 $id,
                 $name,
-                pathinfo($value, PATHINFO_EXTENSION)
+                // An optional file field holds null when nothing was uploaded.
+                pathinfo((string)$value, PATHINFO_EXTENSION)
             )
         );
         $realPath = (string)$path;
