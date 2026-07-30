@@ -56,7 +56,7 @@ final class Globals
      *
      * @param callable|null $writer function(string $name, string $value, array $options): bool
      */
-    public static function setCookieWriter(callable $writer = null)
+    public static function setCookieWriter(?callable $writer = null)
     {
         self::$cookieWriter = $writer;
     }
@@ -119,7 +119,7 @@ final class Globals
      *
      * @return bool|float|int|mixed|string
      */
-    public static function post(string $name = null, string $default = '', bool $checkEmpty = false)
+    public static function post(?string $name = null, string $default = '', bool $checkEmpty = false)
     {
         if ($name === null) {
             return $_SERVER['REQUEST_METHOD'] === 'POST';

@@ -39,21 +39,25 @@ class Collection implements Iterator, Countable, ArrayAccess
         return $this->current() !== false;
     }
 
+    #[\ReturnTypeWillChange]
     public function next()
     {
         next($this->items);
     }
 
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return current($this->items);
     }
 
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         reset($this->items);
     }
 
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return key($this->items);
@@ -69,16 +73,19 @@ class Collection implements Iterator, Countable, ArrayAccess
         return isset($this->items[$offset]);
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
         return $this->items[$offset] ?? null;
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetSet($offset, $value)
     {
         $this->items[$offset] = $value;
     }
 
+    #[\ReturnTypeWillChange]
     public function offsetUnset($offset)
     {
         unset($this->items[$offset]);

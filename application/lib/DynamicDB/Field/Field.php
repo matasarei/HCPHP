@@ -80,7 +80,7 @@ abstract class Field
     }
 
     abstract public function create(): void;
-    abstract public function update(string $rename = null): void;
+    abstract public function update(?string $rename = null): void;
 
     /**
      * Remove field

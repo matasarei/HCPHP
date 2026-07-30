@@ -23,8 +23,8 @@ final class FileManager
      */
     public function __construct(
         Table $table,
-        FileUploadValidator $validator = null,
-        callable $mover = null
+        ?FileUploadValidator $validator = null,
+        ?callable $mover = null
     ) {
         $this->table = $table;
         $this->validator = $validator ?? new FileUploadValidator();

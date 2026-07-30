@@ -92,7 +92,7 @@ class EntityMapper implements MapperInterface
         return $data;
     }
 
-    private function resolveFile(string $name, $value, int $id = null): ?File
+    private function resolveFile(string $name, $value, ?int $id = null): ?File
     {
         if (is_array($value)) {
             try {

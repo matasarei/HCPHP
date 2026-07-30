@@ -52,13 +52,13 @@ class DatabaseSQL implements DatabaseInterface
      */
     public function __construct(
         string $driver = '',
-        string $uri = null,
-        string $dbname = null,
+        ?string $uri = null,
+        ?string $dbname = null,
         string $user = 'root',
         string $pass = '',
         string $prefix = '',
         string $encoding = 'utf8',
-        string $port = null
+        ?string $port = null
     ) {
         if ($driver === self::DRIVER_SQLITE) {
             if ($uri === null) {
@@ -169,7 +169,7 @@ class DatabaseSQL implements DatabaseInterface
         return null;
     }
 
-    public function getValuesSQL(string $sql, array $conditions = [], string $column = null): array
+    public function getValuesSQL(string $sql, array $conditions = [], ?string $column = null): array
     {
         $results = $this->getRecordsSQL($sql, $conditions);
 
@@ -221,7 +221,7 @@ class DatabaseSQL implements DatabaseInterface
         return $sth->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function getRecords(string $collection, array $conditions = [], int $limit = null): array
+    public function getRecords(string $collection, array $conditions = [], ?int $limit = null): array
     {
         $sql = sprintf('SELECT * FROM `%s%s`', $this->prefix, $collection);
 

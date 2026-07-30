@@ -49,7 +49,7 @@ class FormBuilder
      * @uses makeInputLongText
      * @uses makeInputReal
      */
-    public function getEditForm(DynamicEntity $entity = null, Url $cancelUrl = null): Form
+    public function getEditForm(?DynamicEntity $entity = null, ?Url $cancelUrl = null): Form
     {
         $form = new Form();
 
@@ -222,7 +222,7 @@ class FormBuilder
         return new Input($name, $dbField->getDescription(), $default, $required);
     }
 
-    private function getDefaultValue(Field $info, DynamicEntity $entity = null)
+    private function getDefaultValue(Field $info, ?DynamicEntity $entity = null)
     {
         $default = $info->getDefault();
 

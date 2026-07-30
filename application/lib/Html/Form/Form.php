@@ -31,9 +31,9 @@ class Form implements HtmlInterface, TemplateAware
 
     public function __construct(
         string $method = self::METHOD_POST,
-        string $action = null,
+        ?string $action = null,
         ?string $templateName = 'form/default',
-        Validator $validator = null
+        ?Validator $validator = null
     ) {
         $this->method = $method;
         $this->action = $action;

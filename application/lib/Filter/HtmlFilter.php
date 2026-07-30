@@ -15,8 +15,8 @@ class HtmlFilter implements FilterInterface
     private $scriptFilter;
 
     public function __construct(
-        FilterInterface $tagsFilter = null,
-        FilterInterface $scriptFilter = null
+        ?FilterInterface $tagsFilter = null,
+        ?FilterInterface $scriptFilter = null
     ) {
         $this->tagsFilter = $tagsFilter ?? new TagsFilter();
         $this->scriptFilter = $scriptFilter ?? new ScriptsFilter();

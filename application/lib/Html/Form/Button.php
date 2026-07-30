@@ -46,7 +46,7 @@ class Button implements HtmlInterface, TemplateAware
      */
     public function __construct(
         string $name,
-        string $type = null,
+        ?string $type = null,
         $url = null,
         array $attributes = []
     ) {

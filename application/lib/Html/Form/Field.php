@@ -27,10 +27,10 @@ abstract class Field implements  HtmlInterface, TemplateAware
 
     public function __construct(
         string $name,
-        string $title = null,
+        ?string $title = null,
         $default = null,
         bool $required = false,
-        string $template = null
+        ?string $template = null
     ) {
         $this->name = $name;
         $this->title = $title;
@@ -184,7 +184,7 @@ abstract class Field implements  HtmlInterface, TemplateAware
         return $this->attributes;
     }
 
-    public function getAttribute(string $name, string $default = null): ?string
+    public function getAttribute(string $name, ?string $default = null): ?string
     {
         return $this->attributes[$name] ?? $default;
     }

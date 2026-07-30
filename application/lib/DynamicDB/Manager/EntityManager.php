@@ -18,7 +18,7 @@ final class EntityManager
         $this->repository = $repository;
     }
 
-    public function save(DynamicEntity $entity, DynamicEntity $oldEntity = null): DynamicEntity
+    public function save(DynamicEntity $entity, ?DynamicEntity $oldEntity = null): DynamicEntity
     {
         if ($oldEntity !== null) {
             foreach ($this->table->getFields() as $field) {

@@ -45,7 +45,7 @@ final class Path extends MagicObject
      *
      * @return bool
      */
-    function mkpath(bool $touch = false, int $chmod = null): bool
+    function mkpath(bool $touch = false, ?int $chmod = null): bool
     {
         $result = true;
         $path = is_dir($this) ? (string)$this : dirname((string)$this);
@@ -79,7 +79,7 @@ final class Path extends MagicObject
      *
      * @return bool Result
      */
-    function rmpath(bool $recursive = false, string $path = null): bool
+    function rmpath(bool $recursive = false, ?string $path = null): bool
     {
         $result = true;
 
@@ -131,7 +131,7 @@ final class Path extends MagicObject
         return new Url($this->path);
     }
 
-    static function init(string $value, int $dirMod = null, int $fileMod = null)
+    static function init(string $value, ?int $dirMod = null, ?int $fileMod = null)
     {
         if (file_exists($value)) {
             self::$root = $value;

@@ -15,7 +15,7 @@ class FileMapper implements MapperInterface
      */
     private $validator;
 
-    public function __construct(FileUploadValidator $validator = null)
+    public function __construct(?FileUploadValidator $validator = null)
     {
         $this->validator = $validator ?? new FileUploadValidator();
     }

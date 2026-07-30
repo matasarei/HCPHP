@@ -36,7 +36,7 @@ class AuthChecker
         $this->accessConfig = new Config('access', ['capabilities']);
     }
 
-    public function checkCapability(string $name, $context = self::CONTEXT_DEFAULT, User $user = null): bool
+    public function checkCapability(string $name, $context = self::CONTEXT_DEFAULT, ?User $user = null): bool
     {
         $capabilities = $this->accessConfig->get('capabilities')->$context ?? null;
 

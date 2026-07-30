@@ -27,7 +27,7 @@ class Response
      */
     private $responseCode;
 
-    public function __construct(string $content = null, int $responseCode = 200)
+    public function __construct(?string $content = null, int $responseCode = 200)
     {
         $this->content = $content;
         $this->responseCode = $responseCode;

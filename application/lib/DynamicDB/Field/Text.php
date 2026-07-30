@@ -59,7 +59,7 @@ class Text extends Field
         $this->database->executeSQL($sql);
     }
 
-    public function update(string $rename = null): void
+    public function update(?string $rename = null): void
     {
         $default = $this->prepareDefault();
 

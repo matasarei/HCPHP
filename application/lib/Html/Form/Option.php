@@ -8,7 +8,7 @@ class Option
     protected $title;
     protected $attributes;
 
-    public function __construct($value, string $title = null, array $attributes = [])
+    public function __construct($value, ?string $title = null, array $attributes = [])
     {
         $this->value = $value;
         $this->title = $title;

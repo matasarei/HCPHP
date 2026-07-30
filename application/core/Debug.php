@@ -32,7 +32,7 @@ final class Debug
      *
      * @return int current mode
      */
-    static function mode(int $mode = null): int
+    static function mode(?int $mode = null): int
     {
         if ($mode === null) {
             return self::$mode;

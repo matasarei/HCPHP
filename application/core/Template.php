@@ -106,7 +106,7 @@ class Template
      *
      * @param mixed Include data
      */
-    public function make(array $data = null)
+    public function make(?array $data = null)
     {
         $cache = new Path(sprintf('/cache/templates/%s.tmp', $this->template));
 

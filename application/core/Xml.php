@@ -17,7 +17,7 @@ class Xml
      */
     const ATTRIBUTE_NAME_PATTERN = '/^[A-Za-z_:][A-Za-z0-9_.:-]*$/';
 
-    static function tag(string $name, string $content = null, array $attributes = []): string
+    static function tag(string $name, ?string $content = null, array $attributes = []): string
     {
         $string = [sprintf('<%s', $name)];
 

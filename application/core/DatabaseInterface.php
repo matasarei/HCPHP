@@ -51,7 +51,7 @@ interface DatabaseInterface
      *
      * @return array
      */
-    public function getRecords(string $collection, array $conditions, int $limit = null): array;
+    public function getRecords(string $collection, array $conditions, ?int $limit = null): array;
 
     /**
      * @param string $collection

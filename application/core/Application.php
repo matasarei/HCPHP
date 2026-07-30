@@ -137,13 +137,13 @@ final class Application
      *
      * @return bool|float|int|string
      */
-    static function maxUploadFilesize(int $val = null, bool $raw = false)
+    static function maxUploadFilesize(?string $val = null, bool $raw = false)
     {
         $getKBytes = function($raw) {
             $values = ['k' => 1, 'm' => 1024, 'g' => pow(1024, 2)];
             $match = [];
 
-            if (preg_match("/(\d+)(\w)/", strtolower($raw), $match, null, 0)) {
+            if (preg_match("/(\d+)(\w)/", strtolower((string)$raw), $match, 0, 0)) {
                 $multiplier = key_exists($match[2], $values) ? $values[$match[2]] : 0;
                 return $match[1] * $multiplier;
             }
@@ -151,7 +151,10 @@ final class Application
             return 0;
         };
 
-        if ($val === null) {
+        // The condition was inverted: it only ran when nothing was passed, and then fed that
+        // null straight to strtolower() and ini_set(). The parameter is a size string like
+        // "8M", not an int, which is what the pattern below has always assumed.
+        if ($val !== null) {
             if (!preg_match("/(\d+)(\w)/", strtolower($val))) {
                 return false;
             }
@@ -448,7 +451,7 @@ final class Application
      *
      * @return array
      */
-    private static function prepareRequestParameters($params, string $request = null): array
+    private static function prepareRequestParameters($params, ?string $request = null): array
     {
         if (is_array($params)) {
             return array_values($params);

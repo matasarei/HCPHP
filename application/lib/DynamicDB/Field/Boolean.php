@@ -37,7 +37,7 @@ class Boolean extends Field
         $this->database->executeSQL($sql);
     }
 
-    public function update(string $rename = null): void
+    public function update(?string $rename = null): void
     {
         $name = $this->name;
         $rename ? $this->name = $rename : $rename = $name;

@@ -83,7 +83,7 @@ class RecordsController extends Controller
         ;
     }
 
-    public function actionEdit(string $id = null)
+    public function actionEdit(?string $id = null)
     {
         if (!$this->authChecker->checkCapability('edit_records')) {
             return new Response('Access denied', Response::STATUS_FORBIDDEN);

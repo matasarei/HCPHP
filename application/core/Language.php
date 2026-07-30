@@ -44,7 +44,7 @@ final class Language
         return self::$defaultLanguageCode;
     }
 
-    public static function getInstance(string $languageCode = null): self
+    public static function getInstance(?string $languageCode = null): self
     {
         if (empty($languageCode)) {
             $languageCode = self::$defaultLanguageCode;

@@ -45,7 +45,7 @@ class Url extends MagicObject
      * @param array $params
      * @param string|null $anchor
      */
-    public function __construct($path = '', array $params = [], string $anchor = null)
+    public function __construct($path = '', array $params = [], ?string $anchor = null)
     {
         // Get current path.
         if ($path === true) {

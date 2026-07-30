@@ -14,7 +14,7 @@ class View extends Template
 {
     protected $layout;
 
-    public function __construct(string $view = null, $layout = 'default')
+    public function __construct(?string $view = null, $layout = 'default')
     {
         try {
             if ($view === null) {
@@ -41,7 +41,7 @@ class View extends Template
         $this->layout = new Template($layout);
     }
 
-    public function make(array $data = null)
+    public function make(?array $data = null)
     {
         $this->layout->set('content', parent::make($data));
 

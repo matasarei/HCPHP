@@ -17,7 +17,7 @@ class ViewFactory
         $this->authChecker = $authChecker;
     }
 
-    public function createView(string $name = null): View
+    public function createView(?string $name = null): View
     {
         $view = new View($name);
         $layout = $view->getLayout();
