@@ -61,7 +61,7 @@ class UserController extends Controller
         $this->loginFormFactory = new LoginFormFactory();
 
         $this->userRepository = $container->get('repository_user');
-        $this->authChecker = new AuthChecker($this->userRepository);
+        $this->authChecker = $container->get('auth_checker');
         $this->authenticator = $container->get('authenticator');
 
         $this->tableRepository = $container->get('repository_table');

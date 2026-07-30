@@ -52,7 +52,7 @@ class RecordsController extends Controller
     {
         parent::__construct($container);
 
-        $this->authChecker = new AuthChecker($container->get('repository_user'));
+        $this->authChecker = $container->get('auth_checker');
 
         $this->viewFactory = $container->get('view_factory');
         $this->repositoryFactory = $container->get('factory_dynamic_repository');

@@ -22,9 +22,17 @@ class AuthChecker
      */
     private $accessConfig;
 
-    public function __construct(UserRepository $userRepository)
-    {
+    /**
+     * @var int How long a key stays usable after the login that issued it
+     */
+    private $loginTime;
+
+    public function __construct(
+        UserRepository $userRepository,
+        int $loginTime = Authenticator::DEFAULT_LOGIN_TIME
+    ) {
         $this->userRepository = $userRepository;
+        $this->loginTime = $loginTime;
         $this->accessConfig = new Config('access', ['capabilities']);
     }
 
@@ -57,6 +65,17 @@ class AuthChecker
     }
 
     /**
+     * The key was written with an expiry on the cookie, but a cookie expiry is only a request
+     * to the browser. Without checking it here a captured key worked forever.
+     */
+    private function hasExpired(User $user): bool
+    {
+        $authTime = (int)$user->getAuthTime();
+
+        return $authTime <= 0 || $authTime + $this->loginTime < time();
+    }
+
+    /**
      * @return User|null
      */
     public function getCurrentUser()
@@ -70,7 +89,7 @@ class AuthChecker
             if (null !== $authKey) {
                 $user = $this->userRepository->getByAuthKey($authKey);
 
-                if (null === $user || $user->isSuspended()) {
+                if (null === $user || $user->isSuspended() || $this->hasExpired($user)) {
                     return null;
                 }
 

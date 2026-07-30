@@ -64,7 +64,11 @@ class AuthKeyLookupTest extends TestCase
             ] as [$firstName, $email, $authKey]
         ) {
             $role = $roleRepository->get('user');
-            $user = (new User($email, $firstName, $role))->setAuthKey($authKey);
+            // authTime matters now: AuthChecker treats a key older than the login window,
+            // or one that was never issued by a login, as expired.
+            $user = (new User($email, $firstName, $role))
+                ->setAuthKey($authKey)
+                ->setAuthTime(time());
 
             $this->userRepository->save($user);
         }

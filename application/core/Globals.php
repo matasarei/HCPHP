@@ -17,6 +17,11 @@ final class Globals
      */
     const COOKIE_SAMESITE = 'Lax';
 
+    /**
+     * @var callable|null Overridden in tests; see setCookieWriter()
+     */
+    private static $cookieWriter;
+
     public static function init()
     {
         // On an ordinary login the auth key lives in the session, so PHPSESSID is the cookie
@@ -29,14 +34,38 @@ final class Globals
 
     public static function reset(array $params = [])
     {
-        session_unset();
+        // Calling session_unset() without a session raises a warning and does nothing;
+        // CLI commands and tests run without one.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_unset();
+        }
+
+        $_SESSION = [];
 
         foreach ($params as $name) {
             // Expiring a cookie only works when the flags and path match the ones it was
             // written with; otherwise the browser treats it as a different cookie.
-            setcookie($name, '', self::getCookieOptions(1, Application::isHttpsEnabled()));
+            self::writeCookie($name, '', self::getCookieOptions(1, Application::isHttpsEnabled()));
             unset($_COOKIE[$name]);
         }
+    }
+
+    /**
+     * Replace how cookies are written. Only for tests: setcookie() cannot run once any
+     * output exists, which under a test runner is always.
+     *
+     * @param callable|null $writer function(string $name, string $value, array $options): bool
+     */
+    public static function setCookieWriter(callable $writer = null)
+    {
+        self::$cookieWriter = $writer;
+    }
+
+    private static function writeCookie(string $name, string $value, array $options): bool
+    {
+        $writer = self::$cookieWriter ?? 'setcookie';
+
+        return (bool)$writer($name, $value, $options);
     }
 
     /**
@@ -107,9 +136,9 @@ final class Globals
     {
         if ($cookies) {
             $_COOKIE[$name] = $value;
-            setcookie(
+            self::writeCookie(
                 $name,
-                $value,
+                (string)$value,
                 self::getCookieOptions(time() + $time, Application::isHttpsEnabled())
             );
         } else {

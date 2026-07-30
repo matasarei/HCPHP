@@ -2,16 +2,19 @@
 
 use core\Globals;
 use core\View;
-use UserBundle\Repository\UserRepository;
 use UserBundle\Service\AuthChecker;
 
 class ViewFactory
 {
     private $authChecker;
 
-    public function __construct(UserRepository $userRepository)
+    /**
+     * Takes the shared AuthChecker rather than building its own, so every caller agrees on
+     * how long a login lasts.
+     */
+    public function __construct(AuthChecker $authChecker)
     {
-        $this->authChecker = new AuthChecker($userRepository);
+        $this->authChecker = $authChecker;
     }
 
     public function createView(string $name = null): View

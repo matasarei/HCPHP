@@ -14,6 +14,7 @@ use UserBundle\Mapper\RoleMapper;
 use UserBundle\Mapper\UserMapper;
 use UserBundle\Repository\RoleRepository;
 use UserBundle\Repository\UserRepository;
+use UserBundle\Service\AuthChecker;
 use UserBundle\Service\Authenticator;
 
 final class Init extends Handler
@@ -86,8 +87,16 @@ final class Init extends Handler
         $userManager = new UserManager($userRepository, $roleRepository);
         $this->container->set('user_manager', $userManager);
 
-        $this->container->set('authenticator', new Authenticator($userRepository));
-        $this->container->set('view_factory', new ViewFactory($userRepository));
+        // How long a login stays valid. This was configurable but nothing read it, so both
+        // services silently used their own default and an auth key never actually expired.
+        $config = new Config('default', ['loginTime' => Authenticator::DEFAULT_LOGIN_TIME]);
+        $loginTime = (int)$config->get('loginTime');
+
+        $authChecker = new AuthChecker($userRepository, $loginTime);
+
+        $this->container->set('authenticator', new Authenticator($userRepository, $loginTime));
+        $this->container->set('auth_checker', $authChecker);
+        $this->container->set('view_factory', new ViewFactory($authChecker));
     }
 
     private function extendTemplates()
