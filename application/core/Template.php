@@ -223,6 +223,42 @@ class Template
     }
 
     /**
+     * Render a value as text rather than as markup.
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public static function escape($value): string
+    {
+        // ENT_SUBSTITUTE: without it malformed UTF-8 comes back as an empty string on PHP 7,
+        // which loses the value instead of showing it.
+        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /**
+     * Escaped output shortcode.
+     * Syntax: {{escape|$value}}
+     *
+     * Use this for anything a user supplied. {{$value}} stays unescaped because templates
+     * also emit already-rendered markup through it -- {{$content}} is the whole page body
+     * and {{$form}} is a rendered form -- and those must not be escaped.
+     *
+     * @param array $params
+     * @param object $info
+     *
+     * @return string
+     */
+    public function parseEscape(array $params, $info): string
+    {
+        if (empty($params[1])) {
+            return self::replaceWithNotice($params, $info);
+        }
+
+        return sprintf('<?php echo \core\Template::escape(%s) ?>', $params[1]);
+    }
+
+    /**
      * @param array $params
      * @param object $info
      *

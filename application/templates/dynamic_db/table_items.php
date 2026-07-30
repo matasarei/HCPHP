@@ -4,10 +4,10 @@
  * @var DynamicEntity[] $records
  */
 
+use core\Template;
 use DynamicDB\Entity\DynamicEntity;
 use DynamicDB\Entity\Field;
 use DynamicDB\Entity\Table;
-use Filter\HtmlFilter;
 
 ?>
 <table class="table">
@@ -15,7 +15,7 @@ use Filter\HtmlFilter;
     <tr>
         <th scope="col">ID</th>
         <?php foreach ($table->getFields() as $field): ?>
-            <th scope="col"><?= $field->getDescription() ?></th>
+            <th scope="col"><?= Template::escape($field->getDescription()) ?></th>
         <?php endforeach; ?>
         <th scope="col">Created at</th>
         <th scope="col">Modified at</th>
@@ -26,7 +26,7 @@ use Filter\HtmlFilter;
     <?php foreach ($records as $record): ?>
         <tr>
             <th scope="row">
-                <a href="/records/{{$record->id}}/">{{$record->id}}</a>
+                <a href="/records/{{escape|$record->id}}/">{{escape|$record->id}}</a>
             </th>
             <?php foreach ($table->getFields() as $field): ?>
                 <td>
@@ -44,7 +44,7 @@ use Filter\HtmlFilter;
                         <?php endif; ?>
                     <?php elseif ($field->getType() === Field::TYPE_FILE): ?>
                         <?php if (!empty($record->get($field->getName()))): ?>
-                            <a href="/records/<?= $record->getId() ?>/download/<?= $field->getName() ?>/"
+                            <a href="/records/<?= Template::escape($record->getId()) ?>/download/<?= Template::escape($field->getName()) ?>/"
                                class="btn btn-outline-secondary btn-sm">
                                 {{lang|'Get'}}
                             </a>
@@ -53,7 +53,7 @@ use Filter\HtmlFilter;
                         <?php endif; ?>
                     <?php elseif ($field->getType() === Field::TYPE_JSON): ?>
                         <?php if (!empty($record->get($field->getName()))): ?>
-                            <a href="/records/<?= $record->getId() ?>/" class="btn btn-outline-secondary btn-sm">
+                            <a href="/records/<?= Template::escape($record->getId()) ?>/" class="btn btn-outline-secondary btn-sm">
                                 {{lang|'View'}}
                             </a>
                         <?php else: ?>
@@ -61,11 +61,12 @@ use Filter\HtmlFilter;
                         <?php endif; ?>
                     <?php else: ?>
                         <?php if (mb_strlen($record->get($field->getName())) > 16): ?>
-                            <a href="/records/<?= $record->getId() ?>/" class="btn btn-outline-secondary btn-sm">
+                            <a href="/records/<?= Template::escape($record->getId()) ?>/" class="btn btn-outline-secondary btn-sm">
                                 {{lang|'View'}}
                             </a>
                         <?php else: ?>
-                            <?= (new HtmlFilter())->filter($record->get($field->getName())); ?>
+                            <?php // Plain values entered through a form: render as text, not markup. ?>
+                            <?= Template::escape($record->get($field->getName())); ?>
                         <?php endif; ?>
                     <?php endif; ?>
                 </td>
@@ -81,8 +82,8 @@ use Filter\HtmlFilter;
                 </small>
             </td>
             <td class="btn-group btn-group-sm" role="group" aria-label="actions">
-                <a href="/records/{{$record->id}}/edit/" class="btn btn-outline-secondary">{{lang|'Edit'}}</a>
-                <a href="/records/{{$record->id}}/delete/" class="btn btn-outline-danger">{{lang|'Delete'}}</a>
+                <a href="/records/{{escape|$record->id}}/edit/" class="btn btn-outline-secondary">{{lang|'Edit'}}</a>
+                <a href="/records/{{escape|$record->id}}/delete/" class="btn btn-outline-danger">{{lang|'Delete'}}</a>
             </td>
         </tr>
     <?php endforeach; ?>

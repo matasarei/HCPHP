@@ -6,7 +6,7 @@
 ?>
 
 <div class="container mt-5">
-    <h1>Hello, {{$user->getFullName()}}!</h1>
+    <h1>Hello, {{escape|$user->getFullName()}}!</h1>
 </div>
 <div class="container mt-5">
     <div class="btn-group" role="group" aria-label="Basic example">

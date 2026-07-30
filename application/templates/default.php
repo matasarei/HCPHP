@@ -37,7 +37,7 @@ use UserBundle\Entity\User;
                     <input class="form-control me-2"
                            name="like"
                            type="search"
-                           value="<?= $queryString ?? null ?>"
+                           value="<?= \core\Template::escape($queryString ?? null) ?>"
                            placeholder="{{lang|'search'}}"
                            aria-label="Search">
                     <button class="btn btn-outline-success" type="submit">{{lang|'search'}}</button>
