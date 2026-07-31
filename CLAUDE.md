@@ -13,6 +13,10 @@ project. Nothing here is production code.
 Because a fix has to be carried across by hand, the test suite and the commit messages are the
 deliverable as much as the diff: they are what makes a change explicable to whoever ports it.
 
+**Porting a change out of here is [PORTING.md](PORTING.md)** — the procedure, including the
+caller audit and the runtime-version check that a file-level copy skips. If you are asked to
+update an application built on this framework, follow that file rather than improvising.
+
 ## Commands
 
 ```shell

@@ -33,6 +33,17 @@ So the repository holds two things and nothing else:
 
 It is not itself a production application, and is not published as a package.
 
+### Carrying a change into an application
+
+**[PORTING.md](PORTING.md)** is the procedure, written to be handed to a developer or a coding
+agent working in the application rather than here. Link it and it is the whole brief.
+
+It is deliberately not "copy the file across": the copies have diverged for years, class and
+variable names differ between them, and a file-level copy silently reverts whatever that
+application changed. It covers auditing the callers before narrowing any behaviour, checking the
+runtime PHP version from the container rather than `composer.json`, and proving the fix by
+running it in the target rather than reasoning about it.
+
 ## Setup
 ```shell
 # database.json and default.json hold per-deployment values and are not committed.
