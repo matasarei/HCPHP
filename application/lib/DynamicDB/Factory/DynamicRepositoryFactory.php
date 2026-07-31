@@ -30,7 +30,9 @@ class DynamicRepositoryFactory
         $table = $this->tableRepository->get($tableName);
 
         if ($table === null) {
-            throw new RuntimeException(sprintf('Missing configuration for table %s', $table));
+            // $table is null on this branch, which is how it got here: the message named the
+            // thing that was missing rather than the table that was asked for.
+            throw new RuntimeException(sprintf('Missing configuration for table %s', $tableName));
         }
 
         $repository = new DynamicRepository($this->database, $table);

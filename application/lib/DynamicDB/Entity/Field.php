@@ -41,7 +41,17 @@ class Field extends Entity
         return $this->name;
     }
 
-    public function setLength(int $length): self
+    /**
+     * A Real field's length is a decimal: 10.5 means DECIMAL(10,5), ten digits before the
+     * point and five after. Typing this int truncated that to 10 -- silently on PHP 7, with
+     * a deprecation on 8.1+ -- so the shipped config warned on every load and the form built
+     * from it used the wrong bound.
+     *
+     * @param int|float $length
+     *
+     * @return self
+     */
+    public function setLength($length): self
     {
         $this->length = $length;
 
@@ -49,7 +59,7 @@ class Field extends Entity
     }
 
     /**
-     * @return int|null
+     * @return int|float|null
      */
     public function getLength()
     {

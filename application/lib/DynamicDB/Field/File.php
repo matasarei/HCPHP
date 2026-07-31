@@ -2,7 +2,7 @@
 
 namespace DynamicDB\Field;
 
-use http\Exception\InvalidArgumentException;
+use InvalidArgumentException;
 
 /**
  * Text field definition for dymanic database

@@ -27,7 +27,9 @@ class Real extends Field
         }
         
         if ($fractional > 30) {
-            $integer = 30;
+            // Clamped the integer part, which was not the part that was too long: a fractional
+            // part over 30 quietly rewrote DECIMAL(12,40) as DECIMAL(30,40), still invalid.
+            $fractional = 30;
             trigger_error('Max fractional part length is 30');
         }
         
