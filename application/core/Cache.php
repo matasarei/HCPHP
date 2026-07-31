@@ -28,7 +28,15 @@ final class Cache
      * Long term cache, global for all users
      */
     const CACHE_STATIC = 2;
-    
+
+    /**
+     * Directory backing CACHE_STATIC.
+     *
+     * Template compiles into a subdirectory of this one, so purge() deletes files here and
+     * leaves directories alone.
+     */
+    const STATIC_CACHE_PATH = 'cache';
+
     /**
      * Request cache
      *
@@ -121,14 +129,6 @@ final class Cache
     {
         return unserialize($serialized, ['allowed_classes' => self::UNSERIALIZE_ALLOWED_CLASSES]);
     }
-
-    /**
-     * Directory backing CACHE_STATIC.
-     *
-     * Template compiles into a subdirectory of this one, so purge() deletes files here and
-     * leaves directories alone.
-     */
-    const STATIC_CACHE_PATH = 'cache';
 
     /**
      * Drop every entry of one cache type.

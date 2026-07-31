@@ -39,12 +39,12 @@ final class Container
      *
      * @return bool
      */
-    public function has($name): bool
+    public function has(string $name): bool
     {
         return $this->collection->offsetExists($name) || isset($this->factories[$name]);
     }
 
-    public function get($name)
+    public function get(string $name)
     {
         if ($this->collection->offsetExists($name)) {
             return $this->collection->offsetGet($name);
@@ -86,7 +86,7 @@ final class Container
         $this->factories[$name] = $factory;
     }
 
-    public function set($name, $object)
+    public function set(string $name, $object)
     {
         if (!is_object($object)) {
             throw new InvalidArgumentException(

@@ -79,12 +79,19 @@ class CachePurgeTest extends TestCase
     public function testPurgeRemovesTheBackingFiles(): void
     {
         Cache::set('alpha', 'value', Cache::CACHE_STATIC);
-
-        self::assertNotSame([], glob((string)new Path('cache')) ? glob((string)new Path('cache') . '/*.tmp') : []);
+        self::assertNotSame([], $this->backingFiles());
 
         Cache::purge(Cache::CACHE_STATIC);
 
-        self::assertSame([], glob((string)new Path('cache') . '/*.tmp'));
+        self::assertSame([], $this->backingFiles());
+    }
+
+    /**
+     * @return string[] the .tmp files backing CACHE_STATIC, empty when there are none
+     */
+    private function backingFiles(): array
+    {
+        return glob((string)new Path(Cache::STATIC_CACHE_PATH) . '/*.tmp') ?: [];
     }
 
     /**
