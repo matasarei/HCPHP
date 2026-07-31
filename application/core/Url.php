@@ -51,10 +51,12 @@ class Url extends MagicObject
         if ($path === true) {
             // Current anchor is not available at server side.
             $request = Application::getCurrentPath(); // no anchor here.
-            $path = ltrim(parse_url($request, PHP_URL_PATH), '/\\');
+            $path = ltrim((string)parse_url($request, PHP_URL_PATH), '/\\');
             $this->setParams($this->parseParams($request));
         } else {
-            $path = ltrim($path, '/\\');
+            // Application::backUrl() passes the Referer header straight in, and there is not
+            // always one: null reaches ltrim() and is deprecated on PHP 8.1+.
+            $path = ltrim((string)$path, '/\\');
         }
 
         $url = filter_var($path, FILTER_VALIDATE_URL);

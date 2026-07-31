@@ -38,7 +38,10 @@ class View extends Template
 
     public function setLayout(Template $layout)
     {
-        $this->layout = new Template($layout);
+        // Was new Template($layout). The constructor takes a template *name*, so the object
+        // was coerced with __toString() -- which renders it -- and the resulting markup was
+        // used as a filename. Setting a layout could not work.
+        $this->layout = $layout;
     }
 
     public function make(?array $data = null)
