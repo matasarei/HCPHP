@@ -4,7 +4,9 @@ namespace core;
 
 use InvalidArgumentException;
 use PDO;
+use PDOException;
 use PDOStatement;
+use RuntimeException;
 
 /**
  * @package    hcphp
@@ -39,7 +41,32 @@ class DatabaseSQL implements DatabaseInterface
      * @var string Current driver name
      */
     private $driver;
-    
+
+    /**
+     * Connection details, kept so a dropped connection can be rebuilt.
+     *
+     * Null for sqlite: an in-memory database cannot be reconnected without discarding it, and
+     * a file one never drops. connect() refuses to run without a DSN.
+     *
+     * @var string|null
+     */
+    private $dsn;
+
+    /**
+     * @var string
+     */
+    private $user = '';
+
+    /**
+     * @var string
+     */
+    private $pass = '';
+
+    /**
+     * @var string
+     */
+    private $encoding = 'utf8';
+
     /**
      * @param string $driver Database type (sqlite, mysql, pgsql, mssql)
      * @param string|null $uri Resource (host, file or memory(if null))
@@ -60,6 +87,10 @@ class DatabaseSQL implements DatabaseInterface
         string $encoding = 'utf8',
         ?string $port = null
     ) {
+        $this->prefix = $prefix;
+        $this->driver = $driver;
+        $this->encoding = $encoding;
+
         if ($driver === self::DRIVER_SQLITE) {
             if ($uri === null) {
                 $path = ':memory:';
@@ -69,27 +100,38 @@ class DatabaseSQL implements DatabaseInterface
             }
 
             $this->dbh = new PDO(sprintf('sqlite:%s', $path));
+            $this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        } else {
-            if ($port === null) {
-                $port = self::DEFAULT_PORTS[$driver];
-            }
-
-            $this->dbh = new PDO(
-                sprintf('%s:host=%s;port=%d;dbname=%s', $driver, $uri, $port, $dbname),
-                $user,
-                $pass
-            );
+            return;
         }
 
+        if ($port === null) {
+            $port = self::DEFAULT_PORTS[$driver];
+        }
+
+        $this->dsn = sprintf('%s:host=%s;port=%d;dbname=%s', $driver, $uri, $port, $dbname);
+        $this->user = $user;
+        $this->pass = $pass;
+
+        $this->connect();
+    }
+
+    /**
+     * Open the connection described by the constructor arguments.
+     *
+     * Called once from the constructor and again by execute() when a server-side connection
+     * has gone away. Everything that configures a handle belongs here, or the rebuilt one
+     * would come back with different settings from the original.
+     */
+    protected function connect(): void
+    {
+        if ($this->dsn === null) {
+            throw new RuntimeException('This connection cannot be re-established.');
+        }
+
+        $this->dbh = new PDO($this->dsn, $this->user, $this->pass);
         $this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        if ($driver !== self::DRIVER_SQLITE) {
-            $this->dbh->exec(sprintf('SET NAMES %s', $encoding));
-        }
-
-        $this->prefix = $prefix;
-        $this->driver = $driver;
+        $this->dbh->exec(sprintf('SET NAMES %s', $this->encoding));
     }
 
     public function getDBH(): PDO
@@ -238,7 +280,34 @@ class DatabaseSQL implements DatabaseInterface
         return $sth->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    private function execute(string $sql, $conditions = [])
+    private function execute(string $sql, array $conditions = [])
+    {
+        try {
+            return $this->executeStatement($sql, $conditions);
+        } catch (PDOException $exception) {
+            if (!$this->shouldReconnect($exception)) {
+                throw $exception;
+            }
+
+            // A CLI process that sleeps between units of work -- a cron task, an import, a
+            // queue worker -- outlives the server's idle timeout, and every query after that
+            // fails until the connection is rebuilt.
+            error_log(sprintf('[DatabaseSQL] connection lost, reconnecting: %s', $exception->getMessage()));
+
+            $this->connect();
+
+            // Once only. If the second attempt fails too the connection is not coming back
+            // and the caller has to hear about it.
+            return $this->executeStatement($sql, $conditions);
+        }
+    }
+
+    /**
+     * Prepare, bind and run one statement.
+     *
+     * @throws PDOException
+     */
+    protected function executeStatement(string $sql, array $conditions = []): PDOStatement
     {
         $sth = $this->dbh->prepare($sql);
 
@@ -247,8 +316,64 @@ class DatabaseSQL implements DatabaseInterface
         }
 
         $sth->execute();
-        
+
         return $sth;
+    }
+
+    /**
+     * Whether $exception is worth retrying on a rebuilt connection.
+     *
+     * Every clause is a safety guard, not an optimisation:
+     *
+     * - MySQL only. sqlite has no server to lose and reconnecting an in-memory database would
+     *   silently discard it. The other drivers report connection loss differently and are not
+     *   verified here, so they are left alone rather than guessed at.
+     * - CLI only. In a web request a failed statement should surface; replaying it invisibly
+     *   risks repeating a user-visible action.
+     * - Not inside a transaction. The transaction died with the connection, so replaying just
+     *   this statement would commit a fragment of it.
+     */
+    protected function shouldReconnect(PDOException $exception): bool
+    {
+        if ($this->getDriver() !== self::DRIVER_MYSQL) {
+            return false;
+        }
+
+        if (Application::getMode() !== Application::MODE_CLI) {
+            return false;
+        }
+
+        if ($this->dbh->inTransaction()) {
+            return false;
+        }
+
+        return self::isLostConnection($exception);
+    }
+
+    /**
+     * Whether a PDOException means the connection went away, as opposed to the statement
+     * being wrong.
+     *
+     * 2006 is "server has gone away", 2013 is "lost connection during query". The message is
+     * checked as well because the driver code is not always populated -- PDO leaves
+     * errorInfo[1] at 0 for some connection-level failures.
+     *
+     * Deliberately not included: 1213 (deadlock) and 1205 (lock wait timeout). Both are
+     * retryable in principle, but not by reconnecting -- the transaction they belonged to is
+     * gone, and replaying one statement of it would be wrong.
+     */
+    public static function isLostConnection(PDOException $exception): bool
+    {
+        $driverCode = $exception->errorInfo[1] ?? 0;
+
+        if (in_array($driverCode, [2006, 2013], true)) {
+            return true;
+        }
+
+        $message = $exception->getMessage();
+
+        return strpos($message, 'server has gone away') !== false
+            || strpos($message, 'Lost connection') !== false;
     }
 
     public function executeSQL(string $sql, array $values = [])
