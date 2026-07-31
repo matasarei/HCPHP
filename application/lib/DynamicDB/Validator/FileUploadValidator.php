@@ -215,7 +215,9 @@ class FileUploadValidator
      */
     private function assertNotExecutable(File $file): void
     {
-        $handle = fopen($file->getPath(), 'rb');
+        // Silenced deliberately: the false is handled on the next line, and the warning would
+        // otherwise be the only thing a caller sees before the exception it actually wants.
+        $handle = @fopen($file->getPath(), 'rb');
 
         if ($handle === false) {
             throw new InvalidFileTypeException('File could not be read');
@@ -239,7 +241,7 @@ class FileUploadValidator
      */
     private function assertContainsNoScript(File $file): void
     {
-        $handle = fopen($file->getPath(), 'rb');
+        $handle = @fopen($file->getPath(), 'rb');
 
         if ($handle === false) {
             throw new InvalidFileTypeException('File could not be read');
