@@ -200,8 +200,10 @@ class FileUploadValidator
             throw new InvalidFileTypeException('File type could not be determined');
         }
 
+        // No finfo_close(): deprecated from PHP 8.5, where the handle is freed automatically,
+        // and on 7.4 refcounting releases the resource when $info goes out of scope anyway.
+        // Path::getMimeType() and isImage() have always relied on that.
         $detected = finfo_file($info, $file->getPath());
-        finfo_close($info);
 
         if (!is_string($detected) || !in_array($detected, self::ALLOWED_MIME_TYPES, true)) {
             throw new InvalidFileTypeException(

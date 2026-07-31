@@ -4,8 +4,8 @@ namespace Tests\Unit\Core;
 
 use core\Application;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\Reflect;
 use ReflectionClass;
-use ReflectionMethod;
 use RuntimeException;
 
 /**
@@ -26,26 +26,21 @@ class RoutingTest extends TestCase
         $reflection = new ReflectionClass(Application::class);
 
         foreach (['controllerName', 'actionName', 'requestParameters'] as $name) {
-            $property = $reflection->getProperty($name);
-            $property->setAccessible(true);
+            $property = Reflect::property($reflection->getName(), $name);
             $property->setValue(null, $name === 'requestParameters' ? [] : null);
         }
     }
 
     private function call(string $method, array $args)
     {
-        $reflection = new ReflectionMethod(Application::class, $method);
-        $reflection->setAccessible(true);
+        $reflection = Reflect::method(Application::class, $method);
 
         return $reflection->invokeArgs(null, $args);
     }
 
     private function requestParameters(): array
     {
-        $property = (new ReflectionClass(Application::class))->getProperty('requestParameters');
-        $property->setAccessible(true);
-
-        return $property->getValue();
+        return Reflect::getStatic(Application::class, 'requestParameters');
     }
 
     // --- findRoute ---------------------------------------------------------------------------

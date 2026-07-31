@@ -5,8 +5,7 @@ namespace Tests\Unit\DynamicDB;
 use core\Config;
 use DynamicDB\Manager\DatabaseManager;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
-use ReflectionProperty;
+use Tests\Support\Reflect;
 use stdClass;
 use Tests\Support\RecordingDatabase;
 
@@ -46,8 +45,7 @@ class DatabaseManagerTest extends TestCase
         $config = new Config('dynamicdb', ['tables']);
         $config->set('tables', $tables);
 
-        $property = new ReflectionProperty($manager, 'config');
-        $property->setAccessible(true);
+        $property = Reflect::property($manager, 'config');
         $property->setValue($manager, $config);
 
         return $manager;

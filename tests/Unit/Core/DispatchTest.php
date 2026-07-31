@@ -7,8 +7,8 @@ use core\Controller;
 use core\Path;
 use core\Response;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\Reflect;
 use ReflectionClass;
-use ReflectionMethod;
 
 /**
  * Dispatch turns a resolved controller and action into a response. start(), stop() and
@@ -51,16 +51,14 @@ class DispatchTest extends TestCase
         $reflection = new ReflectionClass(Application::class);
 
         foreach (['controllerName' => $controller, 'actionName' => $action, 'requestParameters' => $params] as $name => $value) {
-            $property = $reflection->getProperty($name);
-            $property->setAccessible(true);
+            $property = Reflect::property($reflection->getName(), $name);
             $property->setValue(null, $value);
         }
     }
 
     private function processRequest()
     {
-        $method = new ReflectionMethod(Application::class, 'processRequest');
-        $method->setAccessible(true);
+        $method = Reflect::method(Application::class, 'processRequest');
 
         return $method->invoke(null);
     }

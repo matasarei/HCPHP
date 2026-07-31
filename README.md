@@ -27,6 +27,27 @@ on in production renders exception traces and file paths into the page.
 docker compose exec fpm ./application/lib/vendor/bin/phpunit
 ```
 
+### Which PHP to test against
+
+Supported range: **7.4 to 8.5**. 7.4 is the floor because the projects built on this one still
+run it, and it is the version most likely to reject something the newer ones accept — so it is
+the one worth having locally:
+
+```shell
+# lint and test on the floor, without installing anything
+docker run --rm -v "$PWD":/app -w /app php:7.4-cli sh -c \
+  "find application index.php -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 php -l >/dev/null && php -l run"
+
+docker run --rm -v "$PWD":/app -w /app php:7.4-cli php application/lib/vendor/bin/phpunit
+```
+
+Every other version is covered by CI on push and pull request, so there is no reason to keep
+seven images on a laptop. `.github/workflows/tests.yml` runs the full matrix.
+
+`phpunit.xml` turns warnings, notices and stray output into failures, so a version that merely
+*complains* fails the build. That is deliberate: it is how the PHP 8.1 null-argument
+deprecations and the 8.5 `setAccessible()` and `finfo_close()` ones were found.
+
 ## Core
 The `core` directory includes some core services such as:
 * Application interface - base interface, responsible for routing and request processing.

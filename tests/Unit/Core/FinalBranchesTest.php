@@ -19,7 +19,7 @@ use DynamicDB\Entity\File as FileEntity;
 use Filter\TagsFilter;
 use Html\Form\Input;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
+use Tests\Support\Reflect;
 use RuntimeException;
 use Tests\Support\AppConfig;
 use UserBundle\Entity\Role;
@@ -111,8 +111,7 @@ class FinalBranchesTest extends TestCase
     public function testAnSqliteConnectionCannotBeReEstablished(): void
     {
         $database = new DatabaseSQL(DatabaseSQL::DRIVER_SQLITE);
-        $connect = new ReflectionMethod($database, 'connect');
-        $connect->setAccessible(true);
+        $connect = Reflect::method($database, 'connect');
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('cannot be re-established');
@@ -196,8 +195,7 @@ class FinalBranchesTest extends TestCase
     public function testAStringIsFormattedWithItsArguments(): void
     {
         $language = Language::getInstance('en');
-        $reflection = new \ReflectionProperty($language, 'strings');
-        $reflection->setAccessible(true);
+        $reflection = Reflect::property($language, 'strings');
         $strings = $reflection->getValue($language);
 
         try {

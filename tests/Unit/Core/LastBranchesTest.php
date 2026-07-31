@@ -23,8 +23,8 @@ use DynamicDB\Validator\Exception\InvalidFileTypeException;
 use DynamicDB\Validator\FileUploadValidator;
 use Filter\TagsFilter;
 use PHPUnit\Framework\TestCase;
+use Tests\Support\Reflect;
 use ReflectionMethod;
-use ReflectionProperty;
 use Tests\Support\AppConfig;
 use Tests\Support\RecordingDatabase;
 
@@ -81,8 +81,7 @@ class LastBranchesTest extends TestCase
      */
     public function testTheDocumentRootIsUsedWhenNoRootWasSet(): void
     {
-        $property = new ReflectionProperty(Path::class, 'root');
-        $property->setAccessible(true);
+        $property = Reflect::property(Path::class, 'root');
         $root = $property->getValue();
 
         $previousDocumentRoot = $_SERVER['DOCUMENT_ROOT'] ?? null;
@@ -148,10 +147,8 @@ class LastBranchesTest extends TestCase
         file_put_contents((string)$source, 'DISPATCHED');
 
         $reflection = new \ReflectionClass(Application::class);
-        $controller = $reflection->getProperty('controllerName');
-        $controller->setAccessible(true);
-        $action = $reflection->getProperty('actionName');
-        $action->setAccessible(true);
+        $controller = Reflect::property($reflection->getName(), 'controllerName');
+        $action = Reflect::property($reflection->getName(), 'actionName');
 
         $previous = [$controller->getValue(), $action->getValue()];
 
@@ -275,8 +272,7 @@ class LastBranchesTest extends TestCase
     public function testTheUnusedRelationDefaultHelperStillResolvesAKey(): void
     {
         $builder = $this->builder(new Table('records', 'Records'));
-        $method = new ReflectionMethod($builder, 'getRelationDefault');
-        $method->setAccessible(true);
+        $method = Reflect::method($builder, 'getRelationDefault');
 
         self::assertSame(7, $method->invoke($builder, [7 => 'match', 8 => 'other'], 'match'));
         self::assertSame(0, $method->invoke($builder, [7 => 'a'], 'nothing matches'));
@@ -305,8 +301,7 @@ class LastBranchesTest extends TestCase
         $field = new $class(new RecordingDatabase(), 'records', 'value');
         $field->setDefault(5);
 
-        $method = new ReflectionMethod($field, 'prepareDefault');
-        $method->setAccessible(true);
+        $method = Reflect::method($field, 'prepareDefault');
 
         self::assertSame('5', (string)$method->invoke($field));
     }
@@ -355,8 +350,7 @@ class LastBranchesTest extends TestCase
         // createTable() makes a single confirming read: the table is there afterwards.
         $database->answerSchemaQueries(['SHOW TABLES' => 'widgets']);
 
-        $create = new ReflectionMethod($manager, 'createTable');
-        $create->setAccessible(true);
+        $create = Reflect::method($manager, 'createTable');
         $create->invoke($manager, 'widgets');
 
         self::assertCount(1, $database->getRecords('dynamicdb', ['tablename' => 'widgets']));
@@ -370,8 +364,7 @@ class LastBranchesTest extends TestCase
 
     private function validatorMethod(string $name): ReflectionMethod
     {
-        $method = new ReflectionMethod(FileUploadValidator::class, $name);
-        $method->setAccessible(true);
+        $method = Reflect::method(FileUploadValidator::class, $name);
 
         return $method;
     }

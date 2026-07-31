@@ -11,7 +11,7 @@ use DynamicDB\Manager\EntityManager;
 use DynamicDB\Mapper\EntityMapper;
 use DynamicDB\Repository\DynamicRepository;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
+use Tests\Support\Reflect;
 use RuntimeException;
 use stdClass;
 use Tests\Support\RecordingDatabase;
@@ -168,8 +168,7 @@ class ManagerTest extends TestCase
 
     private function alterTable(DatabaseManager $manager, string $table, stdClass $field)
     {
-        $method = new ReflectionMethod($manager, 'alterTable');
-        $method->setAccessible(true);
+        $method = Reflect::method($manager, 'alterTable');
 
         return $method->invoke($manager, $table, $field);
     }

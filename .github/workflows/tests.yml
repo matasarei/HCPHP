@@ -1,0 +1,79 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # 7.4 is the floor because the projects built on this one still run it. The suite is kept
+  # deprecation-free across the whole range rather than only at the ends: phpunit.xml turns
+  # warnings, notices and stray output into failures, so a version that merely complains is a
+  # red build here.
+  tests:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Every version is reported, rather than stopping at the first red one -- knowing it
+      # breaks on 8.0 only is a different problem from knowing it breaks on everything.
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, mbstring, pdo, pdo_sqlite, fileinfo
+          coverage: none
+          tools: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Lint
+        run: |
+          find application index.php -name '*.php' -not -path '*/vendor/*' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
+          php -l run > /dev/null
+
+      - name: Tests
+        run: php application/lib/vendor/bin/phpunit
+
+  # Coverage is measured once, on the floor, because that is the version whose behaviour the
+  # numbers describe. pcov rather than xdebug: it is a fraction of the runtime and this suite
+  # only needs line coverage.
+  coverage:
+    name: Coverage (PHP 7.4)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: json, mbstring, pdo, pdo_sqlite, fileinfo
+          coverage: pcov
+          tools: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Measure
+        run: php application/lib/vendor/bin/phpunit --coverage-text --coverage-clover coverage/clover.xml
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/clover.xml
+          if-no-files-found: error
