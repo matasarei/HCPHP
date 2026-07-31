@@ -99,14 +99,6 @@ final class Cache
     }
 
     /**
-     * Path of the file backing a static cache entry.
-     *
-     * This used to read new Path('cache/%s.tmp', $name). Path's second parameter is
-     * $validate, not a sprintf argument: the key was cast to a boolean, the %s was never
-     * substituted so every key shared one file, and the truthy $validate then made the
-     * constructor reject it as unreadable. Every CACHE_STATIC call threw.
-     */
-    /**
      * Classes that may be reconstructed from a cache entry.
      *
      * The wrapper this class stores is a stdClass, and that is all HCPHP itself puts in the
@@ -130,12 +122,79 @@ final class Cache
         return unserialize($serialized, ['allowed_classes' => self::UNSERIALIZE_ALLOWED_CLASSES]);
     }
 
+    /**
+     * Directory backing CACHE_STATIC.
+     *
+     * Template compiles into a subdirectory of this one, so purge() deletes files here and
+     * leaves directories alone.
+     */
+    const STATIC_CACHE_PATH = 'cache';
+
+    /**
+     * Drop every entry of one cache type.
+     *
+     * Entries could be written and removed one key at a time, but never cleared in bulk, so
+     * cache/ grew for the life of the install and invalidating it after a deploy meant rm on
+     * the server.
+     *
+     * Only the requested type is touched: the three are separate stores and a caller clearing
+     * its own request cache does not mean to log everyone out of a session cache.
+     *
+     * @param int $type
+     */
+    public static function purge(int $type = self::CACHE_REQUEST): void
+    {
+        if ($type == self::CACHE_SESSION) {
+            $_SESSION['cache'] = [];
+
+            return;
+        }
+
+        if ($type == self::CACHE_STATIC) {
+            $path = new Path(self::STATIC_CACHE_PATH);
+
+            // Nothing has been cached yet on a fresh checkout, and purging is a cleanup
+            // operation -- an absent directory is the desired end state, not an error.
+            $entries = is_dir((string)$path) ? scandir((string)$path) : false;
+
+            if ($entries === false) {
+                return;
+            }
+
+            foreach ($entries as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+
+                $file = new Path(sprintf('%s/%s', self::STATIC_CACHE_PATH, $entry));
+
+                // Subdirectories belong to whoever created them (cache/templates/ is
+                // Template's) and are cleared by their owner.
+                if (!is_dir((string)$file)) {
+                    $file->rmpath();
+                }
+            }
+
+            return;
+        }
+
+        self::$cache = [];
+    }
+
+    /**
+     * Path of the file backing a static cache entry.
+     *
+     * This used to read new Path('cache/%s.tmp', $name). Path's second parameter is
+     * $validate, not a sprintf argument: the key was cast to a boolean, the %s was never
+     * substituted so every key shared one file, and the truthy $validate then made the
+     * constructor reject it as unreadable. Every CACHE_STATIC call threw.
+     */
     private static function _getFile(string $name, bool $create = true): string
     {
         // A key is a name, not a path. Anything that could climb out of the cache directory
         // is flattened rather than trusted.
         $safeName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $name);
-        $path = new Path(sprintf('cache/%s.tmp', $safeName));
+        $path = new Path(sprintf('%s/%s.tmp', self::STATIC_CACHE_PATH, $safeName));
 
         if ($create && !file_exists($path)) {
             $path->mkpath(true);
@@ -144,7 +203,7 @@ final class Cache
         return (string)$path;
     }
 
-    private static function _get(string $name, string $type = self::CACHE_REQUEST)
+    private static function _get(string $name, int $type = self::CACHE_REQUEST)
     {
         if ($type == self::CACHE_SESSION) {
             if (!empty($_SESSION['cache'][$name])) {
