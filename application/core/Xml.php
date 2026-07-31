@@ -41,6 +41,21 @@ class Xml
      *
      * @throws InvalidArgumentException When an attribute name is not a valid name
      */
+    /**
+     * Render a value as text rather than as markup.
+     *
+     * ENT_SUBSTITUTE matters: without it a value carrying invalid UTF-8 comes back as an
+     * empty string on PHP 7, silently dropping the value instead of showing it.
+     *
+     * @param mixed $value
+     *
+     * @return string
+     */
+    public static function escape($value): string
+    {
+        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     protected static function prepareAttributes(array $attributes): string
     {
         $string = [];
@@ -66,13 +81,7 @@ class Xml
             }
 
             // The value sits between quotes, so quotes inside it have to stop being quotes.
-            // ENT_SUBSTITUTE matters: without it, a value carrying invalid UTF-8 comes back
-            // as an empty string on PHP 7, silently dropping the attribute.
-            $string[] = sprintf(
-                '%s="%s"',
-                $name,
-                htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-            );
+            $string[] = sprintf('%s="%s"', $name, self::escape($value));
         }
 
         return implode(' ', $string);

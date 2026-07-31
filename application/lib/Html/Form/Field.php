@@ -154,7 +154,9 @@ abstract class Field implements  HtmlInterface, TemplateAware
 
     public function isDisabled(): bool
     {
-        return $this->getDisabled();
+        // Was return $this->getDisabled(), and there is no such method: any caller asking
+        // whether a field was disabled got a fatal error rather than an answer.
+        return $this->disabled;
     }
 
     public function setTemplate(Template $template): self
@@ -199,7 +201,11 @@ abstract class Field implements  HtmlInterface, TemplateAware
             $attributes['placeholder'] = $this->placeholder;
         }
 
-        if ($this->value ?? $this->default !== null) {
+        // Parenthesised deliberately. ?? binds looser than !==, so this used to read
+        // "$this->value ?? ($this->default !== null)" -- a falsy value was treated as absent,
+        // and a field holding "0" or "" rendered with no value attribute at all. Editing a
+        // record whose integer field was 0 showed an empty box and saved the blank back.
+        if (($this->value ?? $this->default) !== null) {
             $attributes['value'] = $this->value ?? $this->default;
         }
 

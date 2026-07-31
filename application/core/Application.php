@@ -199,7 +199,9 @@ final class Application
      */
     static function getServerParameter(string $name, $default = null)
     {
-        $value = filter_input(INPUT_SERVER, $name);
+        // filter_input() returns null for a header that is not set, and there are none in a
+        // CLI process. Passing that straight to trim() is deprecated on PHP 8.1+.
+        $value = (string)filter_input(INPUT_SERVER, $name);
 
         if (empty(trim($value))) {
             return $default;
@@ -217,7 +219,7 @@ final class Application
             return (int)$port;
         }
 
-        if (preg_match("/:(\d+)$/", filter_input(INPUT_SERVER, 'HTTP_HOST'), $matches)) {
+        if (preg_match("/:(\d+)$/", (string)filter_input(INPUT_SERVER, 'HTTP_HOST'), $matches)) {
             return (int)$matches[1];
         }
 
@@ -236,9 +238,9 @@ final class Application
             return $host;
         }
 
-        $host = preg_replace('/:\d+$/', '', filter_input(INPUT_SERVER, 'HTTP_HOST'));
+        $host = preg_replace('/:\d+$/', '', (string)filter_input(INPUT_SERVER, 'HTTP_HOST'));
 
-        return $host ?: getenv('SERVER_ADDR');
+        return $host ?: (string)getenv('SERVER_ADDR');
     }
 
     public static function backUrl(): ?Url

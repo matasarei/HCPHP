@@ -26,7 +26,11 @@ class Html extends Xml
         empty($attribs['class']) && $attribs['class'] = 'hcphp-link';
         $html = '<a ' . self::prepareAttributes($attribs) . '>';
 
-        return $name ? "{$html}{$name}</a>" : "{$html}{$attribs['href']}</a>";
+        // $name is markup the caller built (an icon, a nested tag) and is inserted as-is.
+        // The fallback label is the URL itself, which is data and may carry anything: it used
+        // to be written raw, so a link to a path containing "<script>" executed it. The href
+        // beside it was escaped all along, which is what made the gap easy to miss.
+        return $name ? "{$html}{$name}</a>" : $html . self::escape($attribs['href']) . '</a>';
     }
     
     /**
