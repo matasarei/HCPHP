@@ -13,6 +13,14 @@ use stdClass;
  */
 class Template
 {
+    /**
+     * Where templates are compiled to.
+     *
+     * A subdirectory of Cache's static cache directory, so Cache::purge() steps over it and
+     * this class clears it instead.
+     */
+    const CACHE_PATH = 'cache/templates';
+
     protected $data = [];
     protected $path;
     protected $template;
@@ -108,11 +116,10 @@ class Template
      */
     public function make(?array $data = null)
     {
-        $cache = new Path(sprintf('/cache/templates/%s.tmp', $this->template));
+        $cache = new Path(sprintf('%s/%s.tmp', self::CACHE_PATH, $this->template));
 
         if (!(is_readable($cache) && filemtime($cache) > filemtime($this->path))) {
             $contents = file_get_contents($this->path);
-            $cache = new Path(sprintf('/cache/templates/%s.tmp', $this->template));
             $cache->mkpath();
 
             file_put_contents($cache, $this->parse($contents));
@@ -129,6 +136,27 @@ class Template
         include ($this->path);
 
         return ob_get_clean();
+    }
+
+    /**
+     * Drop every compiled template.
+     *
+     * make() recompiles only when the source is newer than the compiled copy, so a deploy
+     * that does not advance mtimes -- rsync without --times, a checkout onto a warm cache, an
+     * archive unpacked with preserved timestamps -- keeps serving the previous build. There
+     * was no way to force a recompile short of rm on the server.
+     *
+     * Recursive because template names carry slashes ('form/default'), so compiled files sit
+     * in subdirectories.
+     */
+    public static function purgeCaches(): void
+    {
+        $path = new Path(self::CACHE_PATH);
+
+        // Nothing compiled yet is the desired end state, not an error.
+        if (is_dir((string)$path)) {
+            $path->rmpath(true);
+        }
     }
 
     private function parse(string $contents)
