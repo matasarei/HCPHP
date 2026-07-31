@@ -16,16 +16,6 @@ use Tests\Support\AppConfig;
  */
 class UrlTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     public function testRelativePathBecomesAnAbsoluteUrl(): void
     {
         self::assertSame('http://localhost/user/login', (new Url('user/login'))->make());

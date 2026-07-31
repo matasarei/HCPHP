@@ -15,16 +15,6 @@ use Tests\Support\AppConfig;
  */
 class HtmlTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     // --- link ----------------------------------------------------------------------------
 
     public function testLinkUsesTheUrlAsBothHrefAndLabelWhenNoNameIsGiven(): void

@@ -33,16 +33,6 @@ class RemainingBranchesTest extends TestCase
 {
     private const DIR = 'application/templates/tests_branch';
 
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     protected function setUp(): void
     {
         $_SESSION = [];

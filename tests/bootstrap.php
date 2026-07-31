@@ -13,6 +13,7 @@
 
 use core\Autoloader;
 use core\Path;
+use Tests\Support\AppConfig;
 
 $root = dirname(__DIR__);
 $autoload = $root . '/application/lib/vendor/autoload.php';
@@ -43,3 +44,16 @@ Autoloader::add($root . '/application', $loader);
 Autoloader::add($root . '/application/lib/', $loader);
 
 Path::init($root, 0775, 0664);
+
+// application/config/default.json holds per-deployment values and is not committed, but
+// Application::isHttpsEnabled(), getPort() and getHost() all read it -- and Url, Globals and
+// anything building a link reach one of those. Without it a fresh checkout fails ten tests
+// while a developer's machine, which has the file, passes: exactly the difference CI is for.
+//
+// Done once here rather than per test class. A class-level teardown would delete a file the
+// rest of the run still needs, and a class-level setup leaves whichever class happens to run
+// first deciding whether the others work.
+AppConfig::ensure();
+
+// Removed only if this run created it; a real config is never touched.
+register_shutdown_function([AppConfig::class, 'release']);

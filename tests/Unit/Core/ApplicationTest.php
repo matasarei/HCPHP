@@ -28,16 +28,6 @@ class ApplicationTest extends TestCase
      */
     private $mode;
 
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     protected function setUp(): void
     {
         $this->mode = Application::getMode();

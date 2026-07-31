@@ -36,16 +36,6 @@ use UserBundle\Service\Authenticator;
  */
 class FinalBranchesTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     protected function setUp(): void
     {
         $_SESSION = [];

@@ -16,16 +16,6 @@ use Tests\Support\AppConfig;
 
 class FormTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     protected function setUp(): void
     {
         $_SESSION = [];

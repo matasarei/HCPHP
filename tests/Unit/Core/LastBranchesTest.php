@@ -33,16 +33,6 @@ use Tests\Support\RecordingDatabase;
  */
 class LastBranchesTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     protected function tearDown(): void
     {
         Template::purgeCaches();

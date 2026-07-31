@@ -28,16 +28,6 @@ class FormBuilderTest extends TestCase
      */
     private $database;
 
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     protected function setUp(): void
     {
         $_SESSION = [];

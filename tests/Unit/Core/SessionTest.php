@@ -17,16 +17,6 @@ use Tests\Support\AppConfig;
  */
 class SessionTest extends TestCase
 {
-    public static function setUpBeforeClass(): void
-    {
-        AppConfig::ensure();
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        AppConfig::release();
-    }
-
     public function testInitStartsASession(): void
     {
         Globals::init();
