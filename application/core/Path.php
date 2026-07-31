@@ -203,7 +203,9 @@ final class Path extends MagicObject
      */
     public function getFileName(): ?string
     {
-        if (preg_match("/([\w-?&;\.#~=\@\%\s]+\.[a-z]+)$/Uui", $this->path, $matches)) {
+        // The hyphen was unescaped between \w and ?, so PCRE read it as a range and refused
+        // to compile the pattern: every call warned and returned null.
+        if (preg_match("/([\w\-?&;\.#~=\@\%\s]+\.[a-z]+)$/Uui", $this->path, $matches)) {
             return urldecode(array_shift($matches));
         }
 
