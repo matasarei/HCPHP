@@ -85,7 +85,13 @@ final class FileManager
                 continue;
             }
 
-            //unlink($file->getPath());
+            // The unlink was commented out, so deleting a record left its uploads on disk --
+            // still served by the web server, and never reclaimed.
+            $path = $file->getPath();
+
+            if (is_file($path)) {
+                unlink($path);
+            }
         }
     }
 
