@@ -293,6 +293,33 @@ class LastBranchesTest extends TestCase
     }
 
     /**
+     * Integer and Real override prepareDefault() to skip the quoting a text default needs,
+     * but neither calls it: their create() and update() interpolate the value straight into
+     * the statement. Covered so the override is known to still return what it claims, since
+     * nothing else would notice if it stopped.
+     *
+     * @dataProvider numericFieldProvider
+     */
+    public function testTheNumericDefaultIsPreparedUnquoted(string $class): void
+    {
+        $field = new $class(new RecordingDatabase(), 'records', 'value');
+        $field->setDefault(5);
+
+        $method = new ReflectionMethod($field, 'prepareDefault');
+        $method->setAccessible(true);
+
+        self::assertSame('5', (string)$method->invoke($field));
+    }
+
+    public function numericFieldProvider(): array
+    {
+        return [
+            'integer' => [IntegerField::class],
+            'real' => [Real::class],
+        ];
+    }
+
+    /**
      * MySQL allows at most 30 digits after the decimal point, and the part that is too long
      * is the part that gets clamped.
      */

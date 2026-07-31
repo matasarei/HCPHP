@@ -26,9 +26,14 @@ class Real extends Field
             trigger_error('Max integer part length is 255');
         }
         
+        // Unreachable as the length is encoded. $fractional is a fraction times ten, so it is
+        // always under 10 and the guard can never fire; a DECIMAL(10,35) cannot be asked for
+        // in the first place. Left in place because the limit is real and the encoding is what
+        // needs revisiting -- but nothing here clamps anything today.
+        //
+        // It also used to assign to $integer, so if it ever had fired it would have rewritten
+        // DECIMAL(12,40) as DECIMAL(30,40): still invalid, and now wrong about the whole part.
         if ($fractional > 30) {
-            // Clamped the integer part, which was not the part that was too long: a fractional
-            // part over 30 quietly rewrote DECIMAL(12,40) as DECIMAL(30,40), still invalid.
             $fractional = 30;
             trigger_error('Max fractional part length is 30');
         }
