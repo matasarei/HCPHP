@@ -16,10 +16,24 @@
             <directory>tests/Unit</directory>
         </testsuite>
     </testsuites>
+    <!--
+        Coverage measures the framework, not the demo application built on top of it.
+
+        Included: application/core and application/lib, the code the five downstream projects
+        copy and depend on.
+
+        Excluded: controllers, views, templates, commands and events. Those are the sample
+        application; they exist to show the framework working and are replaced wholesale in
+        every real project, so covering them would report on code nobody reuses. vendor/ is
+        third-party.
+    -->
     <coverage>
         <include>
             <directory suffix=".php">application/core</directory>
-            <directory suffix=".php">application/lib/UserBundle</directory>
+            <directory suffix=".php">application/lib</directory>
         </include>
+        <exclude>
+            <directory suffix=".php">application/lib/vendor</directory>
+        </exclude>
     </coverage>
 </phpunit>
