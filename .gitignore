@@ -2,6 +2,7 @@
 .mysql
 nbproject
 .DS_Store
+.claude
 log
 cache
 shared/dynamicdb
