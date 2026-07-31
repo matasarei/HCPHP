@@ -28,12 +28,14 @@ class DatabaseSQL implements DatabaseInterface
     ];
 
     /**
-     * The server closed a connection that sat idle: the statement never reached it.
+     * "MySQL server has gone away". Reported both for a connection the server closed after
+     * wait_timeout and for one killed while a statement was running -- it says the connection
+     * is gone, not whether the statement ran.
      */
     const ERROR_GONE_AWAY = 2006;
 
     /**
-     * The connection died with the statement in flight: the server may already have run it.
+     * "Lost connection to MySQL server during query".
      */
     const ERROR_LOST_DURING_QUERY = 2013;
 
@@ -367,8 +369,8 @@ class DatabaseSQL implements DatabaseInterface
      *   risks repeating a user-visible action.
      * - Not inside a transaction. The transaction died with the connection, so replaying just
      *   this statement would commit a fragment of it.
-     * - Safe to replay. See isSafeToReplay(): a statement that may already have reached the
-     *   server is only repeated when repeating it cannot change anything.
+     * - A read. See isReadOnly(): the error does not say whether the server ran the statement,
+     *   so a write is never replayed.
      */
     protected function shouldReconnect(PDOException $exception, string $sql): bool
     {
@@ -388,41 +390,31 @@ class DatabaseSQL implements DatabaseInterface
             return false;
         }
 
-        return self::isSafeToReplay($exception, $sql);
-    }
-
-    /**
-     * Whether running $sql a second time cannot repeat work the server already did.
-     *
-     * The two ways a connection dies are not equally safe to retry:
-     *
-     * - 2006, "server has gone away", is the server closing a connection that sat idle past
-     *   wait_timeout. The statement was never sent, so replaying it repeats nothing. This is
-     *   the case the reconnect exists for -- a CLI process that sleeps between units of work.
-     * - 2013, "lost connection during query", is the connection dying with the statement in
-     *   flight. The server may have executed it and failed only on the way back with the
-     *   answer. Replaying an INSERT there writes the row twice, and replaying
-     *   "SET n = n + 1" counts twice.
-     *
-     * So after 2013 only a read is repeated. The allow-list is deliberately short: anything
-     * unrecognised is treated as a write and simply not retried, which costs a failed run
-     * rather than duplicated data.
-     */
-    public static function isSafeToReplay(PDOException $exception, string $sql): bool
-    {
-        $driverCode = $exception->errorInfo[1] ?? 0;
-
-        if ($driverCode === self::ERROR_GONE_AWAY
-            || strpos($exception->getMessage(), 'server has gone away') !== false
-        ) {
-            return true;
-        }
-
+        // Only a read. A write is never replayed, whatever the error says -- see isReadOnly().
         return self::isReadOnly($sql);
     }
 
     /**
-     * Whether $sql only reads, and so may be run twice with no visible effect.
+     * Whether $sql only reads, and so may be run a second time with no visible effect.
+     *
+     * This is the whole of the replay rule, because the error carries no usable information
+     * about whether the server ran the statement. Measured against MariaDB 11, not assumed:
+     *
+     * - A connection closed by the server after wait_timeout reports 2006, "server has gone
+     *   away". So does a connection killed while a statement had been executing for two
+     *   seconds -- same code, same message, for both reads and writes.
+     * - PDO's MySQL driver emulates prepares by default (ATTR_EMULATE_PREPARES = 1) and this
+     *   class never turns that off, so prepare() makes no server round-trip and the failure
+     *   always surfaces at execute() -- exactly where a statement that did reach the server
+     *   fails too.
+     *
+     * There is therefore no way to tell "never sent" from "sent, ran, and the answer was lost
+     * on the way back". Replaying an INSERT in the second case writes the row twice, and
+     * "SET n = n + 1" counts twice. A read replayed in either case is harmless.
+     *
+     * The allow-list is deliberately short: anything unrecognised counts as a write. A missed
+     * retry costs a failed run, which the caller sees; a wrong one costs duplicated data,
+     * which nobody sees.
      */
     public static function isReadOnly(string $sql): bool
     {
@@ -434,7 +426,8 @@ class DatabaseSQL implements DatabaseInterface
      * being wrong.
      *
      * This answers only "is the connection gone", not "may the statement be run again" --
-     * see isSafeToReplay() for that, which the two codes answer very differently.
+     * see isReadOnly() for that. Neither code distinguishes a statement that never reached
+     * the server from one that ran.
      *
      * The message is checked as well because the driver code is not always populated -- PDO
      * leaves errorInfo[1] at 0 for some connection-level failures.
