@@ -50,9 +50,20 @@ class RecordingDatabase extends DatabaseSQL
         $this->statements[] = $sql;
 
         foreach ($this->schemaAnswers as $needle => $value) {
-            if (strpos($sql, $needle) !== false) {
-                return $value;
+            if (strpos($sql, $needle) === false) {
+                continue;
             }
+
+            // An array is a queue: createTable() asks whether the table exists, creates it,
+            // then asks again to confirm, so those two reads need different answers. The last
+            // entry is reused once the queue runs down.
+            if (is_array($value)) {
+                $answer = count($value) > 1 ? array_shift($this->schemaAnswers[$needle]) : reset($value);
+
+                return $answer;
+            }
+
+            return $value;
         }
 
         return null;
