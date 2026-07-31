@@ -41,7 +41,10 @@ class EntityMapper implements MapperInterface
             }
 
             if ($field->getType() === Field::TYPE_DATETIME && !is_numeric($value)) {
-                $entity->set($name, strtotime($value));
+                // A datetime column with nothing in it stays empty. strtotime(null) is
+                // deprecated on PHP 8.1+ and returns false either way, so the entity ended up
+                // holding false where it should have held null.
+                $entity->set($name, $value === null || $value === '' ? null : strtotime((string)$value));
 
                 continue;
             }

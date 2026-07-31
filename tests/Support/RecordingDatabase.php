@@ -19,9 +19,43 @@ class RecordingDatabase extends DatabaseSQL
      */
     private $statements = [];
 
+    /**
+     * Canned answers for getResultSQL(), which DatabaseManager uses to ask MySQL whether a
+     * table or column already exists. sqlite has no SHOW TABLES, and the point of those tests
+     * is the decision taken from the answer, not the answer itself.
+     *
+     * @var array<string, mixed>|null null leaves getResultSQL alone
+     */
+    private $schemaAnswers = null;
+
     public function __construct()
     {
         parent::__construct(DatabaseSQL::DRIVER_SQLITE);
+    }
+
+    /**
+     * @param array<string, mixed> $answers substring of the query => value to return
+     */
+    public function answerSchemaQueries(array $answers): void
+    {
+        $this->schemaAnswers = $answers;
+    }
+
+    public function getResultSQL(string $sql, array $conditions = [])
+    {
+        if ($this->schemaAnswers === null) {
+            return parent::getResultSQL($sql, $conditions);
+        }
+
+        $this->statements[] = $sql;
+
+        foreach ($this->schemaAnswers as $needle => $value) {
+            if (strpos($sql, $needle) !== false) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     public function executeSQL(string $sql, array $values = [])
