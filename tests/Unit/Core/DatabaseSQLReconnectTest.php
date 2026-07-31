@@ -76,8 +76,20 @@ class DatabaseSQLReconnectTest extends TestCase
         return $database;
     }
 
-    private static function lostConnection(int $code = 2006, string $message = 'SQLSTATE[HY000]: General error: 2006 MySQL server has gone away'): PDOException
+    /**
+     * The default message follows the code. 2006 and 2013 carry different text in real life,
+     * and the classification reads the message when the driver code is missing -- a helper
+     * that stamped "gone away" onto a 2013 would make the write-replay tests pass for the
+     * wrong reason.
+     */
+    private static function lostConnection(int $code = 2006, ?string $message = null): PDOException
     {
+        if ($message === null) {
+            $message = $code === 2013
+                ? 'SQLSTATE[HY000]: General error: 2013 Lost connection to MySQL server during query'
+                : 'SQLSTATE[HY000]: General error: 2006 MySQL server has gone away';
+        }
+
         $exception = new PDOException($message);
         $exception->errorInfo = ['HY000', $code, $message];
 
@@ -177,6 +189,108 @@ class DatabaseSQLReconnectTest extends TestCase
         self::assertFalse($this->makeDatabase()->shouldReconnectFor(self::lostConnection(1062, 'Duplicate entry')));
     }
 
+    // --- replaying a write ----------------------------------------------------------------
+
+    /**
+     * 2006 is the server dropping a connection that sat idle past wait_timeout: the statement
+     * never reached it, so replaying anything -- writes included -- repeats nothing. This is
+     * the case the reconnect exists for.
+     *
+     * @dataProvider anyStatementProvider
+     */
+    public function testGoneAwayReplaysAnyStatement(string $sql): void
+    {
+        self::assertTrue($this->makeDatabase()->shouldReconnectFor(self::lostConnection(2006), $sql));
+    }
+
+    public function anyStatementProvider(): array
+    {
+        return [
+            'select' => ['SELECT * FROM users'],
+            'insert' => ['INSERT INTO users (email) VALUES (:email)'],
+            'update' => ['UPDATE users SET seen = seen + 1'],
+            'delete' => ['DELETE FROM users WHERE id = :id'],
+        ];
+    }
+
+    /**
+     * 2013 is the connection dying with the statement in flight. The server may have run it
+     * and failed only on the way back with the answer, so replaying a write would insert the
+     * row twice or count "seen + 1" twice.
+     *
+     * @dataProvider writeStatementProvider
+     */
+    public function testLostDuringQueryDoesNotReplayAWrite(string $sql): void
+    {
+        self::assertFalse(
+            $this->makeDatabase()->shouldReconnectFor(self::lostConnection(2013), $sql),
+            'the server may already have applied this statement'
+        );
+    }
+
+    public function writeStatementProvider(): array
+    {
+        return [
+            'insert' => ['INSERT INTO users (email) VALUES (:email)'],
+            'update' => ['UPDATE users SET seen = seen + 1'],
+            'delete' => ['DELETE FROM users WHERE id = :id'],
+            'replace' => ['REPLACE INTO users (id, email) VALUES (:id, :email)'],
+            'ddl' => ['CREATE TABLE t (id INT)'],
+            'lowercase insert' => ['insert into users (email) values (:email)'],
+            'leading whitespace' => ["\n  INSERT INTO users (email) VALUES (:email)"],
+        ];
+    }
+
+    /**
+     * @dataProvider readStatementProvider
+     */
+    public function testLostDuringQueryStillReplaysARead(string $sql): void
+    {
+        self::assertTrue($this->makeDatabase()->shouldReconnectFor(self::lostConnection(2013), $sql));
+    }
+
+    public function readStatementProvider(): array
+    {
+        return [
+            'select' => ['SELECT * FROM users'],
+            'lowercase' => ['select * from users'],
+            'leading whitespace' => ["\n    SELECT * FROM users"],
+            'parenthesised' => ['(SELECT 1) UNION (SELECT 2)'],
+            'show' => ['SHOW TABLES LIKE "users"'],
+            'describe' => ['DESCRIBE users'],
+            'explain' => ['EXPLAIN SELECT * FROM users'],
+        ];
+    }
+
+    /**
+     * The message-only form carries no driver code, so it has to be classified the same way.
+     */
+    public function testLostConnectionMessageWithoutACodeDoesNotReplayAWrite(): void
+    {
+        $exception = self::lostConnection(0, 'Lost connection to MySQL server during query');
+
+        self::assertFalse($this->makeDatabase()->shouldReconnectFor($exception, 'INSERT INTO users (email) VALUES (:email)'));
+        self::assertTrue($this->makeDatabase()->shouldReconnectFor($exception, 'SELECT * FROM users'));
+    }
+
+    public function testGoneAwayMessageWithoutACodeReplaysAWrite(): void
+    {
+        $exception = self::lostConnection(0, 'SQLSTATE[HY000]: MySQL server has gone away');
+
+        self::assertTrue($this->makeDatabase()->shouldReconnectFor($exception, 'INSERT INTO users (email) VALUES (:email)'));
+    }
+
+    /**
+     * Anything the allow-list does not recognise counts as a write. A missed retry costs a
+     * failed run; a wrong one costs duplicated data.
+     */
+    public function testUnrecognisedStatementIsTreatedAsAWrite(): void
+    {
+        self::assertFalse(DatabaseSQL::isReadOnly('WITH x AS (SELECT 1) SELECT * FROM x'));
+        self::assertFalse(DatabaseSQL::isReadOnly('CALL some_procedure()'));
+        self::assertFalse(DatabaseSQL::isReadOnly(''));
+    }
+
     // --- the retry itself ----------------------------------------------------------------
 
     public function testStatementIsRetriedOnceOnAFreshConnection(): void
@@ -243,6 +357,42 @@ class DatabaseSQLReconnectTest extends TestCase
         self::assertSame(1, $database->statementAttempts, 'no retry for an error the query itself caused');
     }
 
+    /**
+     * The blocker this guard exists for: an INSERT that died in flight must not be replayed,
+     * or the row lands twice.
+     */
+    public function testWriteIsNotReplayedWhenTheConnectionDiedInFlight(): void
+    {
+        $database = $this->makeDatabase();
+        $database->failEveryStatement(self::lostConnection(2013));
+
+        try {
+            $database->insertRecord('users', ['email' => 'bob@example.com']);
+            self::fail('the failure should have propagated');
+        } catch (PDOException $exception) {
+            self::assertStringContainsString('Lost connection', $exception->getMessage());
+        }
+
+        self::assertSame(0, $database->connectCalls);
+        self::assertSame(1, $database->statementAttempts, 'the insert must not run a second time');
+    }
+
+    public function testWriteIsReplayedAfterAnIdleTimeout(): void
+    {
+        $database = $this->makeDatabase();
+        $database->failNextStatement(self::lostConnection(2006));
+
+        $database->insertRecord('users', ['email' => 'bob@example.com']);
+
+        self::assertSame(1, $database->connectCalls);
+        self::assertSame(2, $database->statementAttempts);
+        self::assertCount(
+            1,
+            $database->getRecords('users', ['email' => 'bob@example.com']),
+            'the row should exist exactly once'
+        );
+    }
+
     public function testHealthyQueriesNeverReconnect(): void
     {
         $database = $this->makeDatabase();
@@ -293,9 +443,9 @@ class ReconnectingDatabaseDouble extends DatabaseSQL
         return $this->driverName;
     }
 
-    public function shouldReconnectFor(PDOException $exception): bool
+    public function shouldReconnectFor(PDOException $exception, string $sql = 'SELECT 1'): bool
     {
-        return $this->shouldReconnect($exception);
+        return $this->shouldReconnect($exception, $sql);
     }
 
     public function resetCounters(): void

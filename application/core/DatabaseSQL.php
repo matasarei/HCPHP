@@ -28,6 +28,16 @@ class DatabaseSQL implements DatabaseInterface
     ];
 
     /**
+     * The server closed a connection that sat idle: the statement never reached it.
+     */
+    const ERROR_GONE_AWAY = 2006;
+
+    /**
+     * The connection died with the statement in flight: the server may already have run it.
+     */
+    const ERROR_LOST_DURING_QUERY = 2013;
+
+    /**
      * @var PDO
      */
     private $dbh;
@@ -285,7 +295,7 @@ class DatabaseSQL implements DatabaseInterface
         try {
             return $this->executeStatement($sql, $conditions);
         } catch (PDOException $exception) {
-            if (!$this->shouldReconnect($exception)) {
+            if (!$this->shouldReconnect($exception, $sql)) {
                 throw $exception;
             }
 
@@ -332,8 +342,10 @@ class DatabaseSQL implements DatabaseInterface
      *   risks repeating a user-visible action.
      * - Not inside a transaction. The transaction died with the connection, so replaying just
      *   this statement would commit a fragment of it.
+     * - Safe to replay. See isSafeToReplay(): a statement that may already have reached the
+     *   server is only repeated when repeating it cannot change anything.
      */
-    protected function shouldReconnect(PDOException $exception): bool
+    protected function shouldReconnect(PDOException $exception, string $sql): bool
     {
         if ($this->getDriver() !== self::DRIVER_MYSQL) {
             return false;
@@ -347,16 +359,60 @@ class DatabaseSQL implements DatabaseInterface
             return false;
         }
 
-        return self::isLostConnection($exception);
+        if (!self::isLostConnection($exception)) {
+            return false;
+        }
+
+        return self::isSafeToReplay($exception, $sql);
+    }
+
+    /**
+     * Whether running $sql a second time cannot repeat work the server already did.
+     *
+     * The two ways a connection dies are not equally safe to retry:
+     *
+     * - 2006, "server has gone away", is the server closing a connection that sat idle past
+     *   wait_timeout. The statement was never sent, so replaying it repeats nothing. This is
+     *   the case the reconnect exists for -- a CLI process that sleeps between units of work.
+     * - 2013, "lost connection during query", is the connection dying with the statement in
+     *   flight. The server may have executed it and failed only on the way back with the
+     *   answer. Replaying an INSERT there writes the row twice, and replaying
+     *   "SET n = n + 1" counts twice.
+     *
+     * So after 2013 only a read is repeated. The allow-list is deliberately short: anything
+     * unrecognised is treated as a write and simply not retried, which costs a failed run
+     * rather than duplicated data.
+     */
+    public static function isSafeToReplay(PDOException $exception, string $sql): bool
+    {
+        $driverCode = $exception->errorInfo[1] ?? 0;
+
+        if ($driverCode === self::ERROR_GONE_AWAY
+            || strpos($exception->getMessage(), 'server has gone away') !== false
+        ) {
+            return true;
+        }
+
+        return self::isReadOnly($sql);
+    }
+
+    /**
+     * Whether $sql only reads, and so may be run twice with no visible effect.
+     */
+    public static function isReadOnly(string $sql): bool
+    {
+        return (bool)preg_match('/^\s*\(?\s*(SELECT|SHOW|DESC(RIBE)?|EXPLAIN)\b/i', $sql);
     }
 
     /**
      * Whether a PDOException means the connection went away, as opposed to the statement
      * being wrong.
      *
-     * 2006 is "server has gone away", 2013 is "lost connection during query". The message is
-     * checked as well because the driver code is not always populated -- PDO leaves
-     * errorInfo[1] at 0 for some connection-level failures.
+     * This answers only "is the connection gone", not "may the statement be run again" --
+     * see isSafeToReplay() for that, which the two codes answer very differently.
+     *
+     * The message is checked as well because the driver code is not always populated -- PDO
+     * leaves errorInfo[1] at 0 for some connection-level failures.
      *
      * Deliberately not included: 1213 (deadlock) and 1205 (lock wait timeout). Both are
      * retryable in principle, but not by reconnecting -- the transaction they belonged to is
@@ -366,7 +422,7 @@ class DatabaseSQL implements DatabaseInterface
     {
         $driverCode = $exception->errorInfo[1] ?? 0;
 
-        if (in_array($driverCode, [2006, 2013], true)) {
+        if (in_array($driverCode, [self::ERROR_GONE_AWAY, self::ERROR_LOST_DURING_QUERY], true)) {
             return true;
         }
 
