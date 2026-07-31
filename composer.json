@@ -1,8 +1,8 @@
 {
   "name": "matasarei/hcphp",
-  "description": "A PHP framework",
+  "description": "A small MVC framework, kept as a reference implementation rather than a package.",
   "type": "project",
-  "license": "GNU",
+  "license": "GPL-3.0-or-later",
   "authors": [
     {
       "name": "Yevhen Matasar",

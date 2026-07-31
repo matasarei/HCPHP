@@ -1,8 +1,37 @@
 # HCPHP
-HCPHP is a PHP framework with basic functionality to build simple and fast web applications.
 
-## Why
-Started as a student project in 2014. The goal is to implement small but complete MVC framework.
+[![tests](https://github.com/matasarei/HCPHP/actions/workflows/tests.yml/badge.svg)](https://github.com/matasarei/HCPHP/actions/workflows/tests.yml)
+[![PHP](https://img.shields.io/badge/PHP-7.4%20%E2%80%93%208.5-777bb4?logo=php&logoColor=white)](https://github.com/matasarei/HCPHP/actions/workflows/tests.yml)
+[![license](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](http://www.gnu.org/copyleft/gpl.html)
+
+HCPHP is a small MVC framework for simple and fast web applications: routing, a DI container,
+a database and object-model layer, templates, i18n, events, caching and a CLI.
+
+## Why this exists
+
+Started as a student project in 2014, with the goal of a small but complete MVC framework.
+
+**It is a reference implementation, not a dependency.** A project built on HCPHP takes a copy of
+the foundation and owns it from then on — there is no `composer require` here, and no version to
+upgrade. That is the point rather than an oversight:
+
+- **A project can change any core class it needs to.** Most of these applications are small and
+  long-lived, and the thing that usually hurts is a framework that will not bend. Owning the copy
+  removes that constraint entirely.
+- **Nothing breaks on someone else's schedule.** No upstream release can alter behaviour under a
+  running application.
+- **The cost is deliberate and known**: a fix made here does not propagate. It has to be carried
+  across by hand, to each copy, judged against how that copy has diverged. This repository is
+  where a fix is worked out, tested and explained well enough for that to be possible — which is
+  why the test suite and the commit messages are as detailed as they are.
+
+So the repository holds two things and nothing else:
+
+- **the foundation** — `application/core` and `application/lib`, which is what gets copied;
+- **a demo application** — `controllers`, `views`, `templates`, `commands` and `events`, which
+  exists to show the foundation working and is replaced wholesale in a real project.
+
+It is not itself a production application, and is not published as a package.
 
 ## Setup
 ```shell
