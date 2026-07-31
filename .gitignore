@@ -1,6 +1,7 @@
 .idea
 .mysql
 nbproject
+.DS_Store
 log
 cache
 shared/dynamicdb
