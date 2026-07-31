@@ -77,7 +77,14 @@ class Select extends Field
                 $attributes['selected'] = 'selected';
             }
 
-            $content .= Html::tag('option', $option->getTitle() ?? $option->getValue(), $attributes);
+            // The label is data -- a relation option's title is a column value straight from
+            // the database -- and Xml::tag() writes content verbatim. $content itself is
+            // markup being accumulated, so only the label is escaped.
+            $content .= Html::tag(
+                'option',
+                Html::escape($option->getTitle() ?? $option->getValue()),
+                $attributes
+            );
         }
 
         return Html::tag($this->getTagName(), $content, $this->prepareAttributes());

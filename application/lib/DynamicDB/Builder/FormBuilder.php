@@ -128,9 +128,11 @@ class FormBuilder
 
     private function makeInputBoolean(string $name, $default, Field $field): Select
     {
+        // Select escapes option labels when it renders them, so these are asked for raw --
+        // getString() escaping as well would show "&amp;" for a label containing "&".
         return (new Select($name, $field->getDescription(), (bool)$default, false))
-            ->addOption(new Option(true, $this->language->getString('yes')))
-            ->addOption(new Option(false, $this->language->getString('no')))
+            ->addOption(new Option(true, $this->language->getString('yes', [], false)))
+            ->addOption(new Option(false, $this->language->getString('no', [], false)))
         ;
     }
 

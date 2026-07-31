@@ -14,9 +14,12 @@ class Textarea extends Field
             return $this->template->make();
         }
 
+        // Xml::tag() writes content verbatim, because callers compose markup with it. This
+        // content is the field's value, so it is data: unescaped, a value of
+        // "</textarea><script>..." closed the tag and ran.
         return Html::tag(
             $this->getTagName(),
-            $this->getValue() ?? $this->getDefault() ?? '',
+            Html::escape($this->getValue() ?? $this->getDefault() ?? ''),
             $this->prepareAttributes()
         );
     }

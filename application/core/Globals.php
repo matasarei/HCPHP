@@ -122,7 +122,9 @@ final class Globals
     public static function post(?string $name = null, string $default = '', bool $checkEmpty = false)
     {
         if ($name === null) {
-            return $_SERVER['REQUEST_METHOD'] === 'POST';
+            // There is no REQUEST_METHOD in a CLI process, and reading it unguarded warned.
+            // Anything that is not a POST request is not a POST request.
+            return ($_SERVER['REQUEST_METHOD'] ?? null) === 'POST';
         }
 
         if (isset($_POST[$name])) {
