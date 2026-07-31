@@ -299,16 +299,41 @@ class DatabaseSQL implements DatabaseInterface
                 throw $exception;
             }
 
-            // A CLI process that sleeps between units of work -- a cron task, an import, a
-            // queue worker -- outlives the server's idle timeout, and every query after that
-            // fails until the connection is rebuilt.
-            error_log(sprintf('[DatabaseSQL] connection lost, reconnecting: %s', $exception->getMessage()));
-
+            $this->logReconnect($exception);
             $this->connect();
 
             // Once only. If the second attempt fails too the connection is not coming back
             // and the caller has to hear about it.
             return $this->executeStatement($sql, $conditions);
+        }
+    }
+
+    /**
+     * Record that the connection was rebuilt.
+     *
+     * A CLI process that sleeps between units of work -- a cron task, an import, a queue
+     * worker -- outlives the server's idle timeout, and every query after that fails until
+     * the connection is rebuilt. A reconnect that leaves no trace turns a server dropping
+     * connections into an unexplained slowdown, so it goes to two places:
+     *
+     * - the server error log, because this is an operational event rather than a programming
+     *   mistake, and because it is the only record that survives with debug off -- which is
+     *   how production runs;
+     * - Debug, where every other framework message surfaces, so it is not the one event
+     *   missing from the output a developer is actually reading.
+     *
+     * Guarded by isOn(): Debug::dump() appends unconditionally while flush() only drains the
+     * buffer when debug is on, so dumping with it off would grow that buffer for the life of
+     * a long-running process -- exactly the process this reconnect exists for.
+     */
+    private function logReconnect(PDOException $exception): void
+    {
+        $message = sprintf('[DatabaseSQL] connection lost, reconnecting: %s', $exception->getMessage());
+
+        error_log($message);
+
+        if (Debug::isOn()) {
+            Debug::dump($message, false);
         }
     }
 

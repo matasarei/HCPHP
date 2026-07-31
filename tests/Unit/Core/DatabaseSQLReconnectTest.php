@@ -4,6 +4,7 @@ namespace Tests\Unit\Core;
 
 use core\Application;
 use core\DatabaseSQL;
+use core\Debug;
 use PDOException;
 use PHPUnit\Framework\TestCase;
 
@@ -323,6 +324,77 @@ class DatabaseSQLReconnectTest extends TestCase
         $this->makeDatabase()->getRecords('users', ['email' => 'alice@example.com']);
 
         self::assertSame('', $this->readErrorLog());
+    }
+
+    /**
+     * The error log is where the event survives with debug off; Debug is where every other
+     * framework message surfaces. It has to reach both.
+     */
+    public function testReconnectAlsoSurfacesThroughDebug(): void
+    {
+        $this->withDebugOn(function () {
+            $database = $this->makeDatabase();
+            $database->failNextStatement();
+
+            $database->getRecords('users', ['email' => 'alice@example.com']);
+
+            self::assertStringContainsString('connection lost, reconnecting', (string)Debug::flush());
+        });
+    }
+
+    /**
+     * Debug::dump() appends unconditionally but flush() only drains when debug is on, so
+     * dumping with debug off would grow the buffer for the life of the process -- which is
+     * precisely the long-running CLI process this reconnect exists for.
+     */
+    public function testNothingIsDumpedWhenDebugIsOff(): void
+    {
+        self::assertFalse(Debug::isOn(), 'this test is meaningless if debug is already on');
+
+        // Start from an empty buffer; flush() only clears it while debug is on.
+        $this->withDebugOn(function () {
+        });
+
+        $database = $this->makeDatabase();
+        $database->failNextStatement();
+        $database->getRecords('users', ['email' => 'alice@example.com']);
+
+        // Read what accumulated while debug was off -- without draining first, or the
+        // assertion would be reading a buffer this helper had just emptied.
+        $this->withDebugOn(
+            function () {
+                self::assertSame('', (string)Debug::flush(), 'the dump buffer should not have grown');
+            },
+            false
+        );
+    }
+
+    /**
+     * Debug::mode() also writes error_reporting and display_errors, so all three are put back
+     * -- leaving error_reporting at 0 would blind every test that runs after this one.
+     *
+     * @param bool $drainFirst false to leave whatever is already buffered for $body to read
+     */
+    private function withDebugOn(callable $body, bool $drainFirst = true): void
+    {
+        $mode = Debug::mode();
+        $reporting = error_reporting();
+        $display = ini_get('display_errors');
+
+        Debug::mode(E_ALL);
+
+        if ($drainFirst) {
+            Debug::flush();
+        }
+
+        try {
+            $body();
+        } finally {
+            Debug::flush();
+            Debug::mode($mode);
+            error_reporting($reporting);
+            ini_set('display_errors', $display === false ? '0' : $display);
+        }
     }
 
     public function testStatementIsNotRetriedMoreThanOnce(): void
