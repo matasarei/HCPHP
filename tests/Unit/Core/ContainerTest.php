@@ -12,8 +12,6 @@ use stdClass;
  * Container had no way to ask whether a name was registered and no way to defer
  * construction, so events/Init.php built every service on every request -- a database
  * connection included -- whether or not the route touched them.
- *
- * @covers \core\Container
  */
 class ContainerTest extends TestCase
 {

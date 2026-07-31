@@ -6,10 +6,6 @@ use core\Entity;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-/**
- * @covers \core\Entity
- * @covers \core\MagicObject
- */
 class EntityTest extends TestCase
 {
     public function testIdStartsNull(): void

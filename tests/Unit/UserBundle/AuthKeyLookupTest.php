@@ -19,9 +19,6 @@ use UserBundle\Service\Authenticator;
  * The auth cookie is attacker-controlled and lands in a condition array unmodified.
  * While DatabaseSQL promoted "%"-bearing values to LIKE, the cookie "auth_key=%"
  * matched every row and logged the attacker in as the first user in the table.
- *
- * @covers \UserBundle\Repository\UserRepository
- * @covers \UserBundle\Service\AuthChecker
  */
 class AuthKeyLookupTest extends TestCase
 {

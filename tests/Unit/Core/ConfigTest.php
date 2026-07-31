@@ -7,9 +7,6 @@ use core\Path;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-/**
- * @covers \core\Config
- */
 class ConfigTest extends TestCase
 {
     private const NAME = 'tests_fixture_config';

@@ -20,9 +20,6 @@ use UserBundle\Service\Authenticator;
  * 86,400 candidates, so the key could be derived rather than stolen. They were also never
  * given an expiry and were left valid in the database after logout, so one leak lasted
  * forever.
- *
- * @covers \UserBundle\Service\Authenticator
- * @covers \UserBundle\Service\AuthChecker
  */
 class AuthenticatorTest extends TestCase
 {

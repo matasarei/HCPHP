@@ -12,8 +12,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * The bypass and the LIKE opt-in are covered in DatabaseSQLConditionsTest and
  * DatabaseSQLLikeTest; this covers the rest of the query surface.
- *
- * @covers \core\DatabaseSQL
  */
 class DatabaseSQLTest extends TestCase
 {

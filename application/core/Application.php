@@ -119,18 +119,6 @@ final class Application
         return '127.0.0.1';
     }
 
-    static function getServerIp(): string
-    {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $ip = "127.0.0.1";
-            $host = gethostname();
-
-            return $host ? gethostbyname($host) : $ip;
-        }
-
-        return exec("ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'");
-    }
-
     /**
      * @param int|null $val
      * @param bool $raw

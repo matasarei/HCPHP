@@ -29,16 +29,6 @@ use UnexpectedValueException;
 /**
  * The branches the main suites left behind: error paths, template overrides and the placement
  * clause the DDL builders only emit when a column is positioned.
- *
- * @covers \DynamicDB\Mapper\EntityMapper
- * @covers \DynamicDB\Mapper\FileMapper
- * @covers \DynamicDB\Manager\FileManager
- * @covers \DynamicDB\Field\Real
- * @covers \DynamicDB\Field\Text
- * @covers \Html\Form\Button
- * @covers \Html\Form\Form
- * @covers \Html\Form\Select
- * @covers \Html\Form\Textarea
  */
 class RemainingBranchesTest extends TestCase
 {

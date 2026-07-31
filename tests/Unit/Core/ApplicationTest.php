@@ -20,11 +20,6 @@ use ViewFactory;
  * Application is mostly static request plumbing. What can be checked without a live request
  * is checked here; start(), stop() and processRequest() drive the whole dispatch and belong
  * to an HTTP-level test rather than this one.
- *
- * @covers \core\Application
- * @covers \core\View
- * @covers \ViewFactory
- * @covers \DynamicDB\DynamicDbConfigLoader
  */
 class ApplicationTest extends TestCase
 {

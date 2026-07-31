@@ -5,9 +5,6 @@ namespace Tests\Unit\Core;
 use core\Response;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \core\Response
- */
 class ResponseTest extends TestCase
 {
     public function testDefaultsToAnEmptyOkResponse(): void

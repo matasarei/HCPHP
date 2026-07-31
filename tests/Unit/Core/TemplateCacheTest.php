@@ -15,8 +15,6 @@ use RecursiveIteratorIterator;
  * that restores mtimes -- rsync without --times, a checkout onto a warm cache, an archive
  * unpacked with preserved timestamps -- kept serving the previous build's compiled templates
  * with no way to force a recompile short of rm on the server.
- *
- * @covers \core\Template
  */
 class TemplateCacheTest extends TestCase
 {

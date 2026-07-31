@@ -18,16 +18,6 @@ use UserBundle\Mapper\UserMapper;
 use UserBundle\Repository\RoleRepository;
 use UserBundle\Repository\UserRepository;
 
-/**
- * @covers \UserBundle\Entity\User
- * @covers \UserBundle\Entity\Role
- * @covers \UserBundle\Mapper\RoleMapper
- * @covers \UserBundle\Mapper\UserMapper
- * @covers \UserBundle\Repository\RoleRepository
- * @covers \UserBundle\Repository\UserRepository
- * @covers \UserBundle\Manager\UserManager
- * @covers \UserBundle\Form\LoginFormFactory
- */
 class UserBundleTest extends TestCase
 {
     /**

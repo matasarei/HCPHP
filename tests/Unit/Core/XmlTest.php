@@ -13,8 +13,6 @@ use PHPUnit\Framework\TestCase;
  * The original implementation used preg_replace('/\"/', '\"', ...) -- a C/PHP/SQL escape
  * that HTML does not recognise. The browser closed the attribute at the first quote and read
  * whatever followed as further attributes, which made every rendered form field an XSS vector.
- *
- * @covers \core\Xml
  */
 class XmlTest extends TestCase
 {

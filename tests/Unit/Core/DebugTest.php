@@ -11,8 +11,6 @@ use RuntimeException;
  * Debug decides what a failure looks like to whoever is watching. With debug off it must say
  * nothing at all -- an error page that leaks a stack trace to the public is the failure mode
  * this class exists to avoid.
- *
- * @covers \core\Debug
  */
 class DebugTest extends TestCase
 {

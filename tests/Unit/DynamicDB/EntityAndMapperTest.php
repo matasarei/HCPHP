@@ -11,14 +11,6 @@ use DynamicDB\Mapper\TableMapper;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-/**
- * @covers \DynamicDB\Entity\Field
- * @covers \DynamicDB\Entity\Table
- * @covers \DynamicDB\Entity\File
- * @covers \DynamicDB\Entity\DynamicEntity
- * @covers \DynamicDB\Mapper\FieldMapper
- * @covers \DynamicDB\Mapper\TableMapper
- */
 class EntityAndMapperTest extends TestCase
 {
     // --- Field ---------------------------------------------------------------------------

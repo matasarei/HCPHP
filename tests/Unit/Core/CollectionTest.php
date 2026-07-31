@@ -5,9 +5,6 @@ namespace Tests\Unit\Core;
 use core\Collection;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \core\Collection
- */
 class CollectionTest extends TestCase
 {
     public function testStartsEmpty(): void

@@ -20,8 +20,6 @@ use Tests\Support\AppConfig;
 /**
  * FormBuilder turns a table definition into the form a user edits records with, choosing a
  * widget per field type.
- *
- * @covers \DynamicDB\Builder\FormBuilder
  */
 class FormBuilderTest extends TestCase
 {

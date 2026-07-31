@@ -12,8 +12,6 @@ use PHPUnit\Framework\TestCase;
  *
  * setcookie() itself cannot be observed from a unit test, so the decision lives in a pure
  * function and that is what is pinned here. The header itself is checked over HTTP.
- *
- * @covers \core\Globals
  */
 class GlobalsCookieTest extends TestCase
 {

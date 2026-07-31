@@ -13,8 +13,6 @@ use Tests\Support\AppConfig;
  * Host and port come from Application, which reads them from the request; in a CLI process
  * there is no request, so the host falls back to 'localhost' and the port to 80. That makes
  * the expectations below deterministic.
- *
- * @covers \core\Url
  */
 class UrlTest extends TestCase
 {

@@ -30,18 +30,6 @@ use Tests\Support\RecordingDatabase;
 
 /**
  * The last reachable branches.
- *
- * @covers \core\Debug
- * @covers \core\Path
- * @covers \core\Template
- * @covers \core\Url
- * @covers \core\View
- * @covers \DynamicDB\Builder\FormBuilder
- * @covers \DynamicDB\Field\Integer
- * @covers \DynamicDB\Field\Real
- * @covers \DynamicDB\Manager\DatabaseManager
- * @covers \DynamicDB\Validator\FileUploadValidator
- * @covers \Filter\TagsFilter
  */
 class LastBranchesTest extends TestCase
 {

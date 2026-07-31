@@ -9,13 +9,6 @@ use Html\Form\Select;
 use Html\Form\Textarea;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Html\Form\Field
- * @covers \Html\Form\Input
- * @covers \Html\Form\Select
- * @covers \Html\Form\Textarea
- * @covers \Html\Form\Option
- */
 class FieldTest extends TestCase
 {
     // --- the shared Field base, exercised through Input -----------------------------------

@@ -11,8 +11,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * The traversal behaviour is pinned in PathTest; this covers the filesystem side -- creating,
  * listing, removing and describing paths.
- *
- * @covers \core\Path
  */
 class PathFilesystemTest extends TestCase
 {

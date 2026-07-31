@@ -16,13 +16,6 @@ use PHPUnit\Framework\TestCase;
 use RecordsQueryBuilder;
 use RuntimeException;
 
-/**
- * @covers \DynamicDB\Repository\DynamicRepository
- * @covers \DynamicDB\Repository\TableRepository
- * @covers \DynamicDB\Factory\DynamicRepositoryFactory
- * @covers \DynamicDB\Mapper\EntityMapper
- * @covers \core\Repository
- */
 class RepositoryTest extends TestCase
 {
     /**

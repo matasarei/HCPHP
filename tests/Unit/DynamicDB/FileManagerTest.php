@@ -15,8 +15,6 @@ use PHPUnit\Framework\TestCase;
  * FileManager is the last thing standing between an upload and the filesystem. It re-checks
  * the file even though FileMapper already did, so a caller that builds a File by hand cannot
  * write something executable into the storage directory.
- *
- * @covers \DynamicDB\Manager\FileManager
  */
 class FileManagerTest extends TestCase
 {

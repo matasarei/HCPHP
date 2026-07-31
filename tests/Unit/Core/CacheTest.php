@@ -12,8 +12,6 @@ use PHPUnit\Framework\TestCase;
  * was never substituted, and every static cache entry resolved to the same file -- which,
  * because $validate was then truthy, the constructor refused as unreadable. Every single
  * CACHE_STATIC call threw.
- *
- * @covers \core\Cache
  */
 class CacheTest extends TestCase
 {

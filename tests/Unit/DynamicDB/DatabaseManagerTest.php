@@ -15,8 +15,6 @@ use Tests\Support\RecordingDatabase;
  * through SHOW TABLES and SHOW COLUMNS, which sqlite has no answer for, so those reads are
  * answered from a canned map and what is checked is the DDL it builds and the branch it
  * takes.
- *
- * @covers \DynamicDB\Manager\DatabaseManager
  */
 class DatabaseManagerTest extends TestCase
 {

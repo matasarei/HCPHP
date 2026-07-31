@@ -14,12 +14,6 @@ use Html\Form\Validator;
 use PHPUnit\Framework\TestCase;
 use Tests\Support\AppConfig;
 
-/**
- * @covers \Html\Form\Form
- * @covers \Html\Form\Button
- * @covers \Html\Form\Validator
- * @covers \Html\Form\Exception\InvalidDataException
- */
 class FormTest extends TestCase
 {
     public static function setUpBeforeClass(): void

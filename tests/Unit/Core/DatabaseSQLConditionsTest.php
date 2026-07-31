@@ -14,8 +14,6 @@ use PHPUnit\Framework\TestCase;
  * cookie "%" matched every row and authenticated the attacker as the first user.
  *
  * These tests pin the operator to equality regardless of the value's contents.
- *
- * @covers \core\DatabaseSQL
  */
 class DatabaseSQLConditionsTest extends TestCase
 {

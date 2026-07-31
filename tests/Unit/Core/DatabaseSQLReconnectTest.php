@@ -17,8 +17,6 @@ use PHPUnit\Framework\TestCase;
  * Retrying is only safe under narrow conditions, and the guards matter more than the retry:
  * replaying a statement on a fresh connection inside a transaction would commit a torn write,
  * and replaying one in a web request would double a user-visible action rather than fail it.
- *
- * @covers \core\DatabaseSQL
  */
 class DatabaseSQLReconnectTest extends TestCase
 {

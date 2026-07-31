@@ -19,8 +19,6 @@ use RecordsQueryBuilder;
  *
  * It went unnoticed because logging in was broken for an unrelated reason, so nothing reached
  * the page.
- *
- * @covers \RecordsQueryBuilder
  */
 class RecordsQueryBuilderTest extends TestCase
 {

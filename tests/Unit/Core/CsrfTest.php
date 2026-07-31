@@ -9,8 +9,6 @@ use PHPUnit\Framework\TestCase;
  * The form token used to be the session id itself, read through Globals::get(). That put the
  * session id into the page HTML, and Globals::get() falls back to $_COOKIE, so the value the
  * check compared against was partly under the client's control.
- *
- * @covers \core\Csrf
  */
 class CsrfTest extends TestCase
 {

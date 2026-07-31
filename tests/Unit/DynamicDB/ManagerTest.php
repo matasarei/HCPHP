@@ -16,11 +16,6 @@ use RuntimeException;
 use stdClass;
 use Tests\Support\RecordingDatabase;
 
-/**
- * @covers \DynamicDB\Manager\EntityManager
- * @covers \DynamicDB\Manager\DatabaseManager
- * @covers \DynamicDB\Mapper\EntityMapper
- */
 class ManagerTest extends TestCase
 {
     /**

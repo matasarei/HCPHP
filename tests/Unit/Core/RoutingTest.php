@@ -13,8 +13,6 @@ use RuntimeException;
  * and a 404 -- or between two different pages. The methods are private because nothing but
  * start() should call them, which is exactly why they are reached by reflection here rather
  * than left untested.
- *
- * @covers \core\Application
  */
 class RoutingTest extends TestCase
 {

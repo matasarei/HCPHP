@@ -18,15 +18,6 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
 
-/**
- * @covers \core\Autoloader
- * @covers \core\Events
- * @covers \core\Language
- * @covers \core\Command
- * @covers \core\Controller
- * @covers \core\Handler
- * @covers \core\MapperInterfaceSQL
- */
 class FrameworkPlumbingTest extends TestCase
 {
     // --- Autoloader ---------------------------------------------------------------------

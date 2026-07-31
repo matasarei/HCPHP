@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * The shortcode parser compiles {{...}} into PHP before the template is included, so a
  * mistake here becomes generated code rather than a caught error.
- *
- * @covers \core\Template
  */
 class TemplateRenderTest extends TestCase
 {

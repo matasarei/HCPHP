@@ -12,9 +12,6 @@ use Tests\Support\AppConfig;
  * Html is the layer between application values and Xml's escaping. Xml is well covered, but
  * nothing checked that these helpers actually route their values through it -- which is where
  * an XSS would reappear without a test noticing.
- *
- * @covers \Html\Html
- * @covers \Html\Element
  */
 class HtmlTest extends TestCase
 {

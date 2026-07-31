@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
  * built ({{$content}}, {{$form}}) and as data that came from a user. The first must not be
  * escaped, the second must. There is no way to tell them apart automatically, so escaping is
  * an explicit shortcode and this pins what it does.
- *
- * @covers \core\Template
  */
 class TemplateEscapeTest extends TestCase
 {

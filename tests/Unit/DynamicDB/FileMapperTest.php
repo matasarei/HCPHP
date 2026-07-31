@@ -12,8 +12,6 @@ use UnexpectedValueException;
  * FileMapper is the single point where an HTTP upload becomes a File, so it is where an
  * unacceptable upload has to be turned away -- before anything is written to disk or to
  * the database.
- *
- * @covers \DynamicDB\Mapper\FileMapper
  */
 class FileMapperTest extends TestCase
 {

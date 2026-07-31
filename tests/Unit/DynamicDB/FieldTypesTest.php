@@ -21,18 +21,6 @@ use Tests\Support\RecordingDatabase;
 /**
  * These classes turn a field definition into the DDL that creates or alters a column, which
  * is the only thing standing between config/dynamicdb.json and the live schema.
- *
- * @covers \DynamicDB\Field\Field
- * @covers \DynamicDB\Field\Integer
- * @covers \DynamicDB\Field\Text
- * @covers \DynamicDB\Field\Real
- * @covers \DynamicDB\Field\Enum
- * @covers \DynamicDB\Field\Boolean
- * @covers \DynamicDB\Field\File
- * @covers \DynamicDB\Field\MediumText
- * @covers \DynamicDB\Field\LongText
- * @covers \DynamicDB\Field\Relation
- * @covers \DynamicDB\Field\DateTime
  */
 class FieldTypesTest extends TestCase
 {

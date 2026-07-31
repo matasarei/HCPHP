@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
  * Path stripped leading slashes but did nothing about "..", so a value carrying one resolved
  * outside the project root. Application::start() builds a Path straight from the query
  * string, and several callers build one from stored filenames.
- *
- * @covers \core\Path
  */
 class PathTest extends TestCase
 {

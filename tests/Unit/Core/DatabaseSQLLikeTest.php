@@ -9,9 +9,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * LIKE is still available -- it just has to be asked for explicitly.
- *
- * @covers \core\Like
- * @covers \core\DatabaseSQL
  */
 class DatabaseSQLLikeTest extends TestCase
 {

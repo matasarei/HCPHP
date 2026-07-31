@@ -8,8 +8,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * Globals::filter() is the type contract every controller relies on: the default decides what
  * type comes back, so a scalar default never yields an array and vice versa.
- *
- * @covers \core\Globals
  */
 class GlobalsTest extends TestCase
 {

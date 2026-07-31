@@ -10,10 +10,6 @@ use PHPUnit\Framework\TestCase;
  * The tag allow-list used strip_tags(), which keeps every attribute of the tags it allows.
  * So <a> and <img> survived with their event handlers and javascript: URLs intact, and the
  * "filter" passed the classic payloads straight through.
- *
- * @covers \Filter\TagsFilter
- * @covers \Filter\HtmlFilter
- * @covers \Filter\ScriptsFilter
  */
 class HtmlFilterTest extends TestCase
 {

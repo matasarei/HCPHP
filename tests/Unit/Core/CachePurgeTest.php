@@ -9,8 +9,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * Cache could write CACHE_STATIC entries but never clear them in bulk: cache/ grew without
  * bound and the only way to invalidate it was rm on the server.
- *
- * @covers \core\Cache
  */
 class CachePurgeTest extends TestCase
 {

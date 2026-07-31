@@ -13,8 +13,6 @@ use PHPUnit\Framework\TestCase;
  *
  * The case that motivates all of this: a file called "shell.php" used to be stored as
  * shared/dynamicdb/<id>/<field>.php inside the document root, where nginx would execute it.
- *
- * @covers \DynamicDB\Validator\FileUploadValidator
  */
 class FileUploadValidatorTest extends TestCase
 {

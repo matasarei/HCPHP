@@ -33,19 +33,6 @@ use UserBundle\Service\Authenticator;
 
 /**
  * The last branches: error paths, fallbacks and the conditionals the happy path never takes.
- *
- * @covers \core\Autoloader
- * @covers \core\Cache
- * @covers \core\DatabaseSQL
- * @covers \core\Debug
- * @covers \core\Events
- * @covers \core\Language
- * @covers \core\Path
- * @covers \core\Template
- * @covers \core\Url
- * @covers \Filter\TagsFilter
- * @covers \DynamicDB\Validator\FileUploadValidator
- * @covers \UserBundle\Service\AuthChecker
  */
 class FinalBranchesTest extends TestCase
 {
