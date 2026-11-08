@@ -1,0 +1,1 @@
+ALTER TABLE `item` ADD FULLTEXT INDEX `ft_item_title` (`title`), ALGORITHM=INPLACE, LOCK=NONE;

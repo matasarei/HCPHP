@@ -73,11 +73,11 @@ statements() {
 check_sql() {
     local file="$1" statement
     while IFS= read -r statement; do
-        case "$statement" in
-            *UNIQUE*|*"PRIMARY KEY"*|*FOREIGN*|*FULLTEXT*|*SPATIAL*)
-                finding "$file" "constraint or special index, not allowed: $statement"
-                continue ;;
-        esac
+        # Whole keywords only: `foreign_id` and `idx_unique_code` are ordinary names.
+        if printf '%s' "$statement" | grep -qE '(^|[^A-Z0-9_])(UNIQUE|PRIMARY|FOREIGN|FULLTEXT|SPATIAL)([^A-Z0-9_]|$)'; then
+            finding "$file" "constraint or special index, not allowed: $statement"
+            continue
+        fi
         if printf '%s' "$statement" | grep -qE '^CREATE INDEX [^ ]+ ON '; then
             :
         elif printf '%s' "$statement" | grep -qE '^ALTER TABLE [^ ]+ ADD (INDEX|KEY) '; then
