@@ -78,7 +78,7 @@ check_sql() {
             finding "$file" "constraint or special index, not allowed: $statement"
             continue
         fi
-        if printf '%s' "$statement" | grep -qE '^CREATE INDEX [^ ]+ ON '; then
+        if printf '%s' "$statement" | grep -qE '^CREATE INDEX( IF NOT EXISTS)? [^ ]+ ON '; then
             :
         elif printf '%s' "$statement" | grep -qE '^ALTER TABLE [^ ]+ ADD (INDEX|KEY) '; then
             # Every clause of the ALTER must be an index or the online options: split on commas
