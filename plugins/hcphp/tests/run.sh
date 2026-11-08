@@ -137,6 +137,14 @@ assert_contains "git mode: verdict" "FAIL (2)" "$out"
 mkdir -p "$repo/tests/fixtures" && printf 'DELETE FROM `t`;\n' > "$repo/tests/fixtures/seed.sql"
 out=$("$bin/schema-guard.sh" --base master "$repo")
 assert_contains "git mode: test fixtures are not migrations" "FAIL (2)" "$out"
+# The skip is for test data, not for any path with a tests/ in it.
+repo=$(new_repo nested)
+mkdir -p "$repo/migrations/tests" "$repo/tests/fixtures/migrations"
+printf 'ALTER TABLE `t` DROP INDEX `i`;\n' > "$repo/migrations/tests/drop.sql"
+printf 'DELETE FROM `t`;\n' > "$repo/tests/fixtures/migrations/seed.sql"
+out=$("$bin/schema-guard.sh" --base master "$repo")
+assert_contains "a migrations/tests/ directory is still checked" "migrations/tests/drop.sql" "$out"
+assert_not_contains "tests/fixtures/migrations/ is still test data" "seed.sql" "$out"
 
 # No --base and no origin/HEAD (a clone that never set it): the committed change is still
 # compared with the default branch, never with HEAD — that would check only the dirty tree.

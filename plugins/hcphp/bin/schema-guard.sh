@@ -131,8 +131,10 @@ explicit=0
 check_file() {
     local file="$1" status="$2"
     if [ "$explicit" -eq 0 ]; then
-        case "$file" in
-            tests/*|*/tests/*|fixtures/*|*/fixtures/*) return ;;
+        # A tests/ or fixtures/ directory inside a migrations directory is still migrations.
+        case "/$file" in
+            */migrations/tests/*|*/migrations/*/tests/*|*/migrations/fixtures/*|*/migrations/*/fixtures/*) ;;
+            */tests/*|*/fixtures/*) return ;;
         esac
     fi
     case "$file" in
