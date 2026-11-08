@@ -23,6 +23,15 @@ php_files()   { find application -type f -name '*.php' -not -path '*/vendor/*' -
 view_files()  { php_files | grep -E '^application/(templates|views)/'; }
 ctrl_files()  { php_files | grep -E '^application/controllers/'; }
 
+# each_file <command>...: xargs <command> over the file list on stdin, and nothing for an empty
+# list. GNU xargs runs the command once with no file, and grep -L then reports "(standard input)".
+each_file() {
+    local list
+    list=$(cat)
+    [ -n "$list" ] || return 0
+    printf '%s\n' "$list" | xargs "$@"
+}
+
 # A matched line can hold a credential: every quoted value after a key-like name is replaced
 # before anything is printed, whichever item matched it.
 redact() {
@@ -62,7 +71,7 @@ report TAG-CONTENT php_files 'Xml::tag\([^;]*(\$_(GET|POST|REQUEST)|Globals::)'
 # A POST form in a view with no CSRF token anywhere in the same file.
 # shellcheck disable=SC2046
 report_files CSRF "POST form with no CSRF token in this file" \
-    $(view_files | xargs grep -liE '<form[^>]*method=["'"'"']?post' 2>/dev/null | xargs grep -LiE 'csrf' 2>/dev/null)
+    $(view_files | each_file grep -liE '<form[^>]*method=["'"'"']?post' 2>/dev/null | each_file grep -LiE 'csrf' 2>/dev/null)
 # A controller action that writes, with no CSRF-verified form, token check or method check in
 # that action. Per action, not per file: a guarded save beside an unguarded delete is the case.
 get_state() {
@@ -89,7 +98,7 @@ counts="${counts}GET-STATE $n
 # --- who may do it ------------------------------------------------------------------------------
 # shellcheck disable=SC2046
 report_files AUTHZ "controller with no capability check" \
-    $(ctrl_files | xargs grep -LE 'checkCapability|hasCapability|isAdmin|requireLogin' 2>/dev/null)
+    $(ctrl_files | each_file grep -LE 'checkCapability|hasCapability|isAdmin|requireLogin' 2>/dev/null)
 report IDOR php_files "(Globals::(get|optional|filter)\(|\\\$_(GET|POST|REQUEST)\[)['\"]([a-z_]*_)?id['\"]"
 
 # --- SQL ----------------------------------------------------------------------------------------

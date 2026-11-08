@@ -199,6 +199,15 @@ done
 assert_contains "GET-STATE names the action" "item.php:5: actionSave writes" "$out"
 assert_not_contains "a secret's value is never printed" "hunter2" "$out"
 assert_contains "the secret's file and key are" 'SECRET application/config/secrets.json:2:    "password": "<redacted>"' "$out"
+# No POST form and no controller: GNU xargs runs grep once on empty stdin, which reports
+# "(standard input)" as a file — a candidate that does not exist.
+bare="$scratch/bare"
+mkdir -p "$bare/application/lib"
+printf '<?php\nclass Bare {}\n' > "$bare/application/lib/Bare.php"
+out=$("$bin/scan.sh" "$bare" 2>&1)
+assert_not_contains "no forms, no controllers: no phantom candidate" "(standard" "$out"
+assert_contains "no forms: CSRF 0" "CSRF 0" "$out"
+assert_contains "no controllers: AUTHZ 0" "AUTHZ 0" "$out"
 
 # ---- install.sh and the size budgets ----------------------------------------------------------
 
