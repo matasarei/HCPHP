@@ -30,10 +30,10 @@ the schema a test needs is in the mappers.
 - **Types come from the values.** The layer binds every value as a string, and a TEXT column
   compares as text: `'9' > '50'`. Timestamps, counts and flags get INTEGER. Phone numbers and
   codes stay TEXT, so their leading zeros survive.
-- **What sqlite cannot run** stays on a recording double (HCPHP's `tests/Support/RecordingDatabase.php`):
-  `SQL_CALC_FOUND_ROWS` / `FOUND_ROWS()`, `ON DUPLICATE KEY UPDATE`, `MATCH ... AGAINST`, MySQL
-  DDL, `CONCAT()` on sqlite before 3.44, and questions about the schema itself. Name in the pull
-  request the paths that left untested.
+- **What sqlite cannot run** stays on a recording double (HCPHP's
+  `tests/Support/RecordingDatabase.php`): `SQL_CALC_FOUND_ROWS` / `FOUND_ROWS()`,
+  `ON DUPLICATE KEY UPDATE`, `MATCH ... AGAINST`, MySQL DDL, `CONCAT()` on sqlite before 3.44,
+  and questions about the schema itself. Name in the pull request the paths that left untested.
 - **A class that opens the database in its constructor** is built after the connection is
   registered. One that cannot be pointed anywhere else gets a seam first, a constructor argument
   defaulting to today's behaviour, in its own pull request.

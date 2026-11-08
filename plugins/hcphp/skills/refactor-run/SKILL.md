@@ -60,8 +60,9 @@ order. **A step that cannot be done as written is a stop**, never an improvisati
 When the recipe characterizes (S0, or before S1–S5 where the plan says the code is unpinned):
 copy `templates/CharacterizationTest.php`, write the pins, run them green on the **unchanged**
 code. A pin on code that touches the database runs it on tables built from the mappers
-(`reference/verification-kit.md` §0). A pin on the SQL text itself records it instead. Then mutate the production line each pin is about, run, see the right assertion go red,
-restore. Record each mutation for the commit. A pin that never went red → stop.
+(`reference/verification-kit.md` §0). A pin on the SQL text itself records it instead. Then
+mutate the production line each pin is about, run, see the right assertion go red, restore.
+Record each mutation for the commit. A pin that never went red → stop.
 
 ### 5. Make the change
 
