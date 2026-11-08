@@ -1,0 +1,1 @@
+ALTER TABLE `rating` MODIFY `year` SMALLINT NOT NULL;

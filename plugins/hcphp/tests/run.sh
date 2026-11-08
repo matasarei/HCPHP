@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # backticks in single quotes are SQL identifier quotes
 # run.sh — the plugin's own tests: its scripts against fixtures whose answers are known.
 #
 # Usage: plugins/hcphp/tests/run.sh          (from anywhere)
@@ -73,6 +74,93 @@ assert_eq "HCPHP has no models" 0 "$(fact "$out" models_files)"
 
 "$bin/census.sh" "$fixtures" >/dev/null 2>&1
 assert_eq "not an application → exit 2" 2 "$?"
+
+# ---- throwaway repositories -------------------------------------------------------------------
+
+scratch=$(mktemp -d "${TMPDIR:-/tmp}/hcphp-plugin-tests.XXXXXX")
+trap 'rm -rf "$scratch"' EXIT
+
+# A stub php: `php -l <file>` fails on a file containing SYNTAX_ERROR, passes otherwise.
+mkdir -p "$scratch/stub"
+cat > "$scratch/stub/php" <<'STUB'
+#!/usr/bin/env bash
+if [ "${1:-}" = "-l" ]; then
+    if grep -q SYNTAX_ERROR "$2"; then echo "PHP Parse error: in $2"; exit 255; fi
+    echo "No syntax errors detected in $2"; exit 0
+fi
+exit 0
+STUB
+chmod +x "$scratch/stub/php"
+stub_exec="env PATH=$scratch/stub:\$PATH"
+
+# new_repo <name>: a repository whose base commit holds an LF file, a CRLF file and a migration.
+new_repo() {
+    local dir="$scratch/$1"
+    mkdir -p "$dir/application" "$dir/migrations"
+    printf '<?php\n\nclass A\n{\n}\n' > "$dir/application/a.php"
+    printf '<?php\r\n\r\nclass B\r\n{\r\n}\r\n' > "$dir/application/b.php"
+    printf 'ALTER TABLE `t` ADD INDEX `i` (`c`), ALGORITHM = INPLACE, LOCK = NONE;\n' > "$dir/migrations/old.sql"
+    git -C "$dir" init -q
+    git -C "$dir" -c user.name=t -c user.email=t@example.invalid add -A
+    git -C "$dir" -c user.name=t -c user.email=t@example.invalid commit -qm base
+    git -C "$dir" checkout -qb slice
+    echo "$dir"
+}
+
+# ---- schema-guard.sh --------------------------------------------------------------------------
+
+section schema-guard
+out=$("$bin/schema-guard.sh" --files "$fixtures/schema/pass/"*.sql)
+assert_eq "online indexes pass" PASS "$out"
+for f in "$fixtures"/schema/fail/*.sql "$fixtures/schema/fail/application/config/dynamicdb.json"; do
+    "$bin/schema-guard.sh" --files "$f" >/dev/null
+    status=$?
+    assert_eq "rejects $(basename "$f")" 1 "$status"
+done
+out=$("$bin/schema-guard.sh" --files "$fixtures/schema/fail/index_with_column.sql")
+assert_contains "names the extra clause" "ADD COLUMN" "$out"
+
+repo=$(new_repo guard)
+cp "$fixtures/schema/pass/"*.sql "$repo/migrations/"
+out=$("$bin/schema-guard.sh" --base master "$repo")
+assert_eq "git mode: new index migration passes" PASS "$out"
+printf 'ALTER TABLE `t` DROP INDEX `i`;\n' >> "$repo/migrations/old.sql"
+mkdir -p "$repo/application/config" && printf '{}\n' > "$repo/application/config/dynamicdb.json"
+out=$("$bin/schema-guard.sh" --base master "$repo")
+assert_contains "git mode: edited migration fails" "old.sql: existing migration modified" "$out"
+assert_contains "git mode: untracked dynamicdb.json fails" "dynamicdb.json: DynamicDB" "$out"
+assert_contains "git mode: verdict" "FAIL (2)" "$out"
+mkdir -p "$repo/tests/fixtures" && printf 'DELETE FROM `t`;\n' > "$repo/tests/fixtures/seed.sql"
+out=$("$bin/schema-guard.sh" --base master "$repo")
+assert_contains "git mode: test fixtures are not migrations" "FAIL (2)" "$out"
+
+# ---- slice-check.sh ---------------------------------------------------------------------------
+
+section slice-check
+repo=$(new_repo clean)
+printf '<?php\n\nclass A\n{\n    public function b(): int\n    {\n        return 1;\n    }\n}\n' > "$repo/application/a.php"
+out=$("$bin/slice-check.sh" --exec "$stub_exec" --test "echo OK '(3 tests, 3 assertions)'" --base master "$repo")
+assert_eq "clean slice: verdict" PASS "$(printf '%s\n' "$out" | tail -1)"
+assert_contains "clean slice: lint counted" "PASS lint (1 files)" "$out"
+assert_contains "clean slice: suite summary quoted" "PASS suite: OK (3 tests, 3 assertions)" "$out"
+
+repo=$(new_repo dirty)
+printf '<?php\n\ndeclare(strict_types=1);\n\nclass A\n{\n}\n' > "$repo/application/a.php"
+printf '<?php\n\nclass B\n{\n}\n' > "$repo/application/b.php"
+printf '<?php\nSYNTAX_ERROR\n' > "$repo/application/c.php"
+printf 'ALTER TABLE `t` DROP COLUMN `c`;\n' > "$repo/migrations/new.sql"
+out=$("$bin/slice-check.sh" --exec "$stub_exec" --test "echo 'FAILURES! Tests: 3, Failures: 1.'; false" --base master "$repo")
+status=$?
+assert_eq "dirty slice: exit 1" 1 "$status"
+assert_contains "dirty slice: lint" "FAIL lint: application/c.php" "$out"
+assert_contains "dirty slice: strict types" "FAIL strict-types" "$out"
+assert_contains "dirty slice: line endings" "application/b.php(crlf→lf)" "$out"
+assert_contains "dirty slice: schema" "FAIL schema" "$out"
+assert_contains "dirty slice: suite" "FAIL suite (exit 1): FAILURES! Tests: 3, Failures: 1." "$out"
+assert_eq "dirty slice: verdict" "FAIL (5)" "$(printf '%s\n' "$out" | tail -1)"
+
+"$bin/slice-check.sh" --exec "$stub_exec" --base master "$repo" >/dev/null 2>&1
+assert_eq "no test command → exit 2" 2 "$?"
 
 # ---- summary ----------------------------------------------------------------------------------
 
