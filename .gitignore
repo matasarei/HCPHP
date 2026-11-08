@@ -10,6 +10,5 @@ shared/dynamicdb
 application/lib/vendor
 .phpunit.result.cache
 coverage
-docs
 application/config/database.json
 application/config/default.json
