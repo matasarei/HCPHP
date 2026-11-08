@@ -117,10 +117,12 @@ Inside an HCPHP checkout, for one finding the application recorded as "also in H
 
 1. Test-first in HCPHP, in `tests/Unit/...`: red, fix, green, at 7.4.
 2. A new advisory in `docs/advisories/<date>-<slug>.md`, **generic**: what was wrong, impact,
-   how to tell, the fix, the porting checklist, and **Markers** — a `defective` and a `fixed`
-   line, each checked: `drift.sh` on HCPHP must say `fixed`, and on the commit before the fix
-   (a `git worktree`) `defective`. **No application name, no application path, no line from
-   an application, no status table** — HCPHP is public.
+   how to tell, the fix, the porting checklist, and **Markers** — a `fixed` line, and a
+   `defective` line whenever the defect has a shape a pattern can match (a missing call has
+   none: say so in the advisory). Each checked: `drift.sh` on HCPHP must say `fixed`, and on
+   the commit before the fix (a `git worktree`) `defective`, or `read-by-hand` when there is
+   no defective line. **No application name, no application path, no line from an
+   application, no status table** — HCPHP is public.
 3. One pull request in HCPHP. Then each application picks it up with `/hcphp:port <ADV-id>`.
 
 ## Rules

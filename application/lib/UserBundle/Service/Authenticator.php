@@ -55,6 +55,10 @@ class Authenticator
 
         $this->logout();
 
+        // On an ordinary login the auth key lives in the session, so the session id is the
+        // identity. Keeping the id the browser arrived with lets whoever planted it in.
+        Globals::regenerateSession();
+
         // Always a fresh key. Reusing the previous one kept a stolen key working across
         // logins, and the old sha1($id . time()) was derivable: for a known user and a
         // one-day window that is roughly 86,400 candidates to try offline.
