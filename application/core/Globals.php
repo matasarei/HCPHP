@@ -32,6 +32,19 @@ final class Globals
         session_start();
     }
 
+    /**
+     * Give the session a new id, keeping its data, and delete the old one. Call it whenever the
+     * identity behind the session changes: an id that was known before login must not be the
+     * id of the logged-in user.
+     */
+    public static function regenerateSession(): void
+    {
+        // CLI commands and tests run without a session; regenerating one warns.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+    }
+
     public static function reset(array $params = [])
     {
         // Calling session_unset() without a session raises a warning and does nothing;
