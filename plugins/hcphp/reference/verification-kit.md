@@ -11,6 +11,42 @@ Throwaway scripts go in the copy's ignored scratch directory (`var/` where it ex
 `./run` does — `Application::setMode(Application::MODE_CLI)` and `Events::triggerEvent('Init')`
 in HCPHP — before touching any service, or the container is empty.
 
+## 0. A test database, built from the code — before the first test that needs one
+
+A copy usually has no schema file, so code that touches the database looks untestable. It is
+not, and a dump of a production database is never the way in, not even a structure-only one:
+the schema a test needs is in the mappers.
+
+- **The base class comes first.** A copy with no base test case for database work gets one,
+  from `templates/DatabaseTestCase.php`, in its own pull request and with a test of its own,
+  before the first test that needs it. Every test gets a new in-memory sqlite connection,
+  registered at every point the code looks the database up (a static registry, a container
+  entry, a constructor argument) and removed in `tearDown()`, together with any entity cache.
+- **Tables come from the mappers.** Each mapper names its table and turns an entity into a row.
+  Build the entity with every field set, take the row the mapper writes (`rowFromMapper()`), and
+  create the table from it (`createTableFromRow()`). Each test creates only the tables it
+  touches. A column the code reads but no mapper writes is added by name in the test, with a
+  comment saying where it is read.
+- **Types come from the values.** The layer binds every value as a string, and a TEXT column
+  compares as text: `'9' > '50'`. Timestamps, counts and flags get INTEGER. Phone numbers and
+  codes stay TEXT, so their leading zeros survive.
+- **What sqlite cannot run** stays on a recording double (HCPHP's `tests/Support/RecordingDatabase.php`):
+  `SQL_CALC_FOUND_ROWS` / `FOUND_ROWS()`, `ON DUPLICATE KEY UPDATE`, `MATCH ... AGAINST`, MySQL
+  DDL, `CONCAT()` on sqlite before 3.44, and questions about the schema itself. Name in the pull
+  request the paths that left untested.
+- **A class that opens the database in its constructor** is built after the connection is
+  registered. One that cannot be pointed anywhere else gets a seam first, a constructor argument
+  defaulting to today's behaviour, in its own pull request.
+- **A controller action** is stopped at a collaborator by a sentinel exception thrown from a
+  double, and the test asserts what the action did up to that point (HCPHP's
+  `tests/Unit/RecordsDeleteTest.php`). A render that exits is caught the same way, at the view.
+- **The local instance** for §2–§4 is built from the mappers in the same way when no schema
+  exists, never from production. Its rows are written through the application's own forms or
+  repositories.
+
+A fix is never recorded as untested because the schema is missing. Only a path that needs SQL
+sqlite cannot run is, and the pull request names it.
+
 ## 1. Suite and lint — every slice
 
 ```sh
