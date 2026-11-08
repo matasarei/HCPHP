@@ -11,8 +11,9 @@ Runs the plan `/hcphp:refactor-plan` wrote and a person approved. Every slice is
 that changes structure and **nothing else**: the same pages render the same bytes, the same
 queries return the same rows, the same writes store the same columns.
 
-**Paths.** The plugin root is two directories above this skill's base directory; `reference/`,
-`templates/` and `bin/` are relative to it. Under Claude Code `bin/` is on `PATH`.
+**Paths.** The plugin root is two directories above this skill's base directory.
+`reference/`, `templates/` and `bin/` are relative to it.
+Under Claude Code `bin/` is on `PATH`, so its scripts run by name.
 
 ## Arguments
 

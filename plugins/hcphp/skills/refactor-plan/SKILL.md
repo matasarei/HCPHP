@@ -13,9 +13,9 @@ architecture with ratchet tests, verify against the running app. It worked, and 
 careful; ~30 bugs it caught passed a green suite. This skill does the careful part — the plan —
 and leaves the mechanical part to `/hcphp:refactor-run`.
 
-**Paths.** The plugin root is two directories above this skill's base directory. `reference/`,
-`templates/` and `bin/` below are relative to it. Under Claude Code `bin/` is on `PATH`, so
-`census.sh` runs by name; elsewhere call `<plugin root>/bin/census.sh`.
+**Paths.** The plugin root is two directories above this skill's base directory.
+`reference/`, `templates/` and `bin/` are relative to it.
+Under Claude Code `bin/` is on `PATH`, so its scripts run by name.
 
 **It writes the plan file and nothing else.** No code, no tests, no commits.
 

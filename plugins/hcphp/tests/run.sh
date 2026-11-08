@@ -162,6 +162,42 @@ assert_eq "dirty slice: verdict" "FAIL (5)" "$(printf '%s\n' "$out" | tail -1)"
 "$bin/slice-check.sh" --exec "$stub_exec" --base master "$repo" >/dev/null 2>&1
 assert_eq "no test command → exit 2" 2 "$?"
 
+# ---- install.sh and the size budgets ----------------------------------------------------------
+
+section install
+app="$scratch/app"
+mkdir -p "$app"
+out=$("$plugin/install.sh" --opencode "$app" 2>&1)
+assert_eq "install exits 0" 0 "$?"
+installed="$(cd "$app" && pwd)/.opencode"
+for name in refactor-plan refactor-run; do
+    skill="$installed/skills/hcphp-$name/SKILL.md"
+    assert_eq "hcphp-$name installed" yes "$([ -f "$skill" ] && echo yes || echo no)"
+    assert_eq "hcphp-$name renamed" "name: hcphp-$name" "$(sed -n 2p "$skill")"
+    assert_contains "hcphp-$name points at the plugin root" "The plugin root is \`$installed/hcphp\`." "$(cat "$skill")"
+    assert_not_contains "hcphp-$name has no Claude Code paths" "two directories above" "$(cat "$skill")"
+    assert_not_contains "hcphp-$name has no /hcphp: references" "/hcphp:" "$(cat "$skill")"
+done
+assert_eq "scripts executable" yes "$([ -x "$installed/hcphp/bin/census.sh" ] && echo yes || echo no)"
+assert_eq "advisories copied" yes "$([ -n "$(ls "$installed/hcphp/advisories/"*.md 2>/dev/null)" ] && echo yes || echo no)"
+mkdir -p "$installed/skills/hcphp-retired" "$installed/skills/other"
+"$plugin/install.sh" --opencode "$app" >/dev/null 2>&1
+assert_eq "a retired hcphp skill is removed" no "$([ -d "$installed/skills/hcphp-retired" ] && echo yes || echo no)"
+assert_eq "someone else's skill is kept" yes "$([ -d "$installed/skills/other" ] && echo yes || echo no)"
+"$plugin/install.sh" >/dev/null 2>&1
+assert_eq "no --opencode → exit 2" 2 "$?"
+
+# A small model reads a skill and its references beside the code; reference/small-model.md.
+section budgets
+for f in "$plugin"/reference/*.md; do
+    lines=$(awk 'END { print NR }' "$f")
+    assert_eq "$(basename "$f") ≤ 200 lines" yes "$([ "$lines" -le 200 ] && echo yes || echo "no ($lines)")"
+done
+for f in "$plugin"/skills/*/SKILL.md; do
+    lines=$(awk 'END { print NR }' "$f")
+    assert_eq "$(basename "$(dirname "$f")") SKILL.md ≤ 250 lines" yes "$([ "$lines" -le 250 ] && echo yes || echo "no ($lines)")"
+done
+
 # ---- PHP templates ----------------------------------------------------------------------------
 
 # The host's php when there is one (CI sets up the floor version); otherwise the floor in a
