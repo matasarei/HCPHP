@@ -208,10 +208,12 @@ assert_contains "no markers → read by hand, never fixed" "ADV-2026-902 read-by
 "$bin/drift.sh" --advisories "$adv" "$fixtures/drift/fixed" >/dev/null
 assert_eq "anything not fixed → exit 1" 1 "$?"
 out=$("$bin/drift.sh" --advisories "$repo_root/docs/advisories" "$repo_root")
-assert_contains "HCPHP's own advisories hold on HCPHP" "fixed 4, defective 0, read-by-hand 0" "$out"
+advisories=$(find "$repo_root/docs/advisories" -name '*.md' | awk 'END { print NR }')
+assert_contains "HCPHP's own advisories hold on HCPHP" "fixed $advisories, defective 0, read-by-hand 0" "$out"
 for a in "$repo_root"/docs/advisories/*.md; do
-    n=$(grep -cE '^- (defective|fixed): `' "$a")
-    assert_eq "$(basename "$a") has markers" yes "$([ "$n" -ge 2 ] && echo yes || echo "no ($n)")"
+    # A fixed marker always; a defective one only where the defect has a matchable shape.
+    n=$(grep -cE '^- fixed: `' "$a")
+    assert_eq "$(basename "$a") has a fixed marker" yes "$([ "$n" -ge 1 ] && echo yes || echo "no ($n)")"
 done
 
 # ---- scan.sh ----------------------------------------------------------------------------------
