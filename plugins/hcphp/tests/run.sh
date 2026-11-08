@@ -9,7 +9,7 @@ set -u
 
 here="$(cd "$(dirname "$0")" && pwd)"
 plugin="$(cd "$here/.." && pwd)"
-repo="$(cd "$plugin/../.." && pwd)"
+repo_root="$(cd "$plugin/../.." && pwd)"
 fixtures="$here/fixtures"
 bin="$plugin/bin"
 
@@ -68,7 +68,7 @@ assert_eq "floor from platform pin" 7.4 "$(fact "$out" php_floor)"
 assert_eq "lib classes" 1 "$(fact "$out" lib_classes)"
 assert_eq "named by a test" 0 "$(fact "$out" lib_classes_untested)"
 
-out=$("$bin/census.sh" "$repo")
+out=$("$bin/census.sh" "$repo_root")
 assert_eq "HCPHP itself is lazy" setFactory "$(fact "$out" container_api)"
 assert_eq "HCPHP has no models" 0 "$(fact "$out" models_files)"
 
@@ -162,7 +162,42 @@ assert_eq "dirty slice: verdict" "FAIL (5)" "$(printf '%s\n' "$out" | tail -1)"
 "$bin/slice-check.sh" --exec "$stub_exec" --base master "$repo" >/dev/null 2>&1
 assert_eq "no test command → exit 2" 2 "$?"
 
+# ---- PHP templates ----------------------------------------------------------------------------
+
+# The host's php when there is one (CI sets up the floor version); otherwise the floor in a
+# container; otherwise these are skipped, and the summary says so.
+section templates
+skipped=0
+if command -v php >/dev/null 2>&1; then
+    php_run() { (cd "$repo_root" && "$@"); }
+elif command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    php_run() { docker run --rm -v "$repo_root":/app -w /app php:7.4-cli "$@"; }
+else
+    php_run() { return 127; }
+fi
+
+if php_run php -v >/dev/null 2>&1; then
+    for f in "$plugin"/templates/*.php "$here"/php/*.php; do
+        relative="${f#"$repo_root"/}"
+        out=$(php_run php -l "$relative" 2>&1)
+        assert_contains "lint $(basename "$f")" "No syntax errors" "$out"
+    done
+    out=$(grep -l 'declare(strict_types' "$plugin"/templates/*.php || true)
+    assert_eq "no template declares strict_types" "" "$out"
+
+    if [ -f "$repo_root/application/lib/vendor/bin/phpunit" ]; then
+        out=$(php_run php application/lib/vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php \
+            --fail-on-warning --fail-on-risky plugins/hcphp/tests/php 2>&1)
+        assert_contains "template tests" "OK (" "$out"
+        case "$out" in *"OK ("*) ;; *) printf '%s\n' "$out" | tail -20 ;; esac
+    else
+        skipped=$((skipped + 1)); echo "SKIP template tests: run composer install first"
+    fi
+else
+    skipped=$((skipped + 1)); echo "SKIP templates: neither php nor docker is available"
+fi
+
 # ---- summary ----------------------------------------------------------------------------------
 
-printf '%d passed, %d failed\n' "$passed" "$failed"
+printf '%d passed, %d failed, %d skipped\n' "$passed" "$failed" "$skipped"
 [ "$failed" -eq 0 ]
