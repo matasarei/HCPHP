@@ -17,6 +17,17 @@ deliverable as much as the diff: they are what makes a change explicable to whoe
 caller audit and the runtime-version check that a file-level copy skips. If you are asked to
 update an application built on this framework, follow that file rather than improvising.
 
+**Skills for those applications ship from here**, as the `hcphp` plugin in `plugins/hcphp/` —
+this repository is its marketplace. `/hcphp:port` carries HCPHP's fixes into an application and
+scans it for its own holes; `/hcphp:refactor-plan` and `/hcphp:refactor-run` refactor it toward
+single-responsibility services and constructor injection without changing behaviour or schema.
+The plugin is tooling, not foundation: nothing under `plugins/` is copied into an application.
+
+**Security advisories** live in `docs/advisories/` and are generic: this repository is public,
+so an advisory names HCPHP's defect, its fix commit and how to detect it, and **never** an
+application, its file:line or its patch status. Each application tracks its own status in its
+own (private) repository.
+
 ## Commands
 
 ```shell
@@ -33,6 +44,9 @@ docker run --rm -v "$PWD":/app -w /app php:7.4-cli sh -c \
 
 # run: http://localhost:8080/
 docker compose up -d
+
+# the plugin's own tests: its scripts against fixtures, its PHP templates at 7.4
+plugins/hcphp/tests/run.sh
 ```
 
 No build step.

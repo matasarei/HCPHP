@@ -44,6 +44,24 @@ application changed. It covers auditing the callers before narrowing any behavio
 runtime PHP version from the container rather than `composer.json`, and proving the fix by
 running it in the target rather than reasoning about it.
 
+### Skills for applications built on HCPHP
+
+This repository is also a Claude Code plugin marketplace. The `hcphp` plugin works inside an
+application built on this foundation, not here:
+
+```
+/plugin install hcphp --marketplace matasarei/HCPHP
+```
+
+| Skill | What it does |
+|---|---|
+| `/hcphp:port` | Checks the application against HCPHP's security advisories (`docs/advisories/`), ports the fixes it is missing by the PORTING.md procedure, and scans it for holes of its own. Tracks the result in the application's own repository |
+| `/hcphp:refactor-plan` | Measures the application, chooses how to refactor it toward single-responsibility services and constructor injection, and cuts the work into one-pull-request slices. Stops for approval |
+| `/hcphp:refactor-run` | Carries out an approved plan slice by slice: characterization tests proven able to fail, verbatim moves, running-app verification, one pull request each, never merged |
+
+Refactoring never changes behaviour, and never the schema beyond an online index. For local models
+under OpenCode: `plugins/hcphp/install.sh --opencode [<application>]`.
+
 ## Setup
 ```shell
 # database.json and default.json hold per-deployment values and are not committed.

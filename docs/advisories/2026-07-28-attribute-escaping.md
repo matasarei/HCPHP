@@ -43,6 +43,12 @@ grep -n 'preg_replace' application/core/Xml.php
 A line escaping `\"` is the bug. Runtime check: store `" onfocus=alert(1) x="` in any text
 field and open the edit form; `view-source` shows whether the payload closed the attribute.
 
+**Markers** — read by the hcphp plugin's `drift.sh`; paths are relative to the application root,
+and a copy whose code matches neither shape is reported as "read by hand", never as fixed:
+
+- defective: `application/core/Xml.php` matches `preg_replace\('/\\"/'`
+- fixed: `application/core/Xml.php` matches `htmlspecialchars\(.*ENT_QUOTES`
+
 ## The fix
 
 ```php

@@ -1,0 +1,11 @@
+{
+  "name": "hcphp",
+  "version": "0.1.0",
+  "description": "Port, scan and refactor applications built on HCPHP: /hcphp:port, /hcphp:refactor-plan, /hcphp:refactor-run. Behaviour-preserving by construction: characterization first, verbatim moves, index-only schema changes, one slice per pull request.",
+  "license": "GPL-3.0-or-later",
+  "author": {
+    "name": "Yevhen Matasar",
+    "url": "https://github.com/matasarei/HCPHP"
+  },
+  "repository": "https://github.com/matasarei/HCPHP"
+}

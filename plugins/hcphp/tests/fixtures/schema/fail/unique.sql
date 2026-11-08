@@ -1,0 +1,1 @@
+ALTER TABLE `rating` ADD UNIQUE INDEX `uq_year` (`year`), ALGORITHM = INPLACE, LOCK = NONE;

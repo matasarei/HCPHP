@@ -1,0 +1,1 @@
+CREATE SPATIAL INDEX `sp_item_point` ON `item` (`point`) ALGORITHM=INPLACE LOCK=NONE;
