@@ -82,7 +82,7 @@ changed_php=$(printf '%s\n' "$changed" | grep -E '\.php$|^run$' || true)
 lint_failed=""
 lint_count=0
 while IFS= read -r file; do
-    [ -n "$file" ] && [ -f "$file" ] || continue
+    [ -f "$file" ] || continue
     lint_count=$((lint_count + 1))
     if ! output=$(run "php -l $(printf '%q' "$file")" 2>&1); then
         lint_failed="$lint_failed $file"
@@ -105,7 +105,7 @@ fi
 # ---- line endings ----------------------------------------------------------------------------
 switched=""
 while IFS= read -r file; do
-    [ -n "$file" ] && [ -f "$file" ] || continue
+    [ -f "$file" ] || continue
     git cat-file -e "$base:$file" 2>/dev/null || continue
     was=lf; now=lf
     git show "$base:$file" | grep -q $'\r' && was=crlf

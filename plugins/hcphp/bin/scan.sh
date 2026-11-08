@@ -9,7 +9,8 @@
 #
 # Exit 0 always when it ran (candidates are not failures); 2 when this is not an application.
 
-# shellcheck disable=SC2016,SC2329  # patterns are literal; tracked_config is called via report
+# shellcheck disable=SC2016,SC2317,SC2329  # patterns are literal; tracked_config is called via report
+# (SC2317 is what shellcheck before 0.10 calls SC2329)
 set -u
 
 cd "${1:-.}" || exit 2

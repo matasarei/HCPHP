@@ -38,7 +38,7 @@ if [ -z "$dir" ]; then
         if [ -n "$candidate" ] && [ -d "$candidate" ]; then dir="$candidate"; break; fi
     done
 fi
-[ -n "$dir" ] && [ -d "$dir" ] || { echo "drift: no advisories found; pass --advisories <HCPHP>/docs/advisories" >&2; exit 2; }
+[ -d "$dir" ] || { echo "drift: no advisories found; pass --advisories <HCPHP>/docs/advisories" >&2; exit 2; }
 dir="$(cd "$dir" && pwd)"
 
 cd "${1:-.}" || exit 2

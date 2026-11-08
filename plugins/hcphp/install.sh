@@ -26,7 +26,9 @@ if [ -n "${2:-}" ]; then
 else
     target="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 fi
-[ "$target" != "/" ] && [ -n "$target" ] || { echo "install: invalid target '$target'" >&2; exit 2; }
+if [ -z "$target" ] || [ "$target" = "/" ]; then
+    echo "install: invalid target '$target'" >&2; exit 2
+fi
 
 root="$target/hcphp"
 echo "Installing hcphp to $target"
