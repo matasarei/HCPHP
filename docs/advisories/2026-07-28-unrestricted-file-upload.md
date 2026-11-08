@@ -54,6 +54,13 @@ printf '<?php echo "EXECUTED";' > <upload-dir>/probe.php
 curl -s https://<host>/<upload-path>/probe.php   # anything but 403/404 is a finding
 ```
 
+**Markers** — read by the hcphp plugin's `drift.sh`; paths are relative to the application root,
+and a copy whose code matches neither shape is reported as "read by hand", never as fixed:
+
+- defective: `application/lib/DynamicDB/Manager/FileManager.php` matches `^ *pathinfo\(\$file->getName\(\), *PATHINFO_EXTENSION\)`
+- fixed: `application/lib/DynamicDB/Validator/FileUploadValidator.php` matches `finfo`
+- fixed: `docker/nginx/default.conf` matches `location \^~ /shared/`
+
 ## The fix
 
 Four layers. Layer 1 is the fix; the others exist so a mistake in one is not an RCE again.

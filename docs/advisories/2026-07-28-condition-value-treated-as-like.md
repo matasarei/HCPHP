@@ -67,6 +67,12 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Cookie: _auth_key=%' https://<host>
 
 A page that renders as a logged-in user confirms it.
 
+**Markers** — read by the hcphp plugin's `drift.sh`; paths are relative to the application root,
+and a copy whose code matches neither shape is reported as "read by hand", never as fixed:
+
+- defective: `application/core` matches `strpos\(\$value, *'%'\)`
+- fixed: `application/core/DatabaseSQL.php` matches `instanceof Like`
+
 ## The fix
 
 Choose the operator from the value's **type**, never its contents. A plain string always means `=`,

@@ -46,6 +46,13 @@ curl -s -i https://<host>/user/login/ | grep -i set-cookie
 
 Anything without `HttpOnly` and `SameSite` is affected.
 
+**Markers** — read by the hcphp plugin's `drift.sh`; paths are relative to the application root,
+and a copy whose code matches neither shape is reported as "read by hand", never as fixed:
+
+- defective: `application/core/Globals.php` matches `setcookie\(\$name, *\$value, *time\(\) *\+ *\$time, *'/'\)`
+- fixed: `application/core/Globals.php` matches `'samesite'`
+- fixed: `application/core/Globals.php` matches `session_set_cookie_params`
+
 ## The fix
 
 Use the options-array form of `setcookie()` (PHP 7.3+), and set the session parameters before
