@@ -101,6 +101,8 @@ new_repo() {
     printf '<?php\r\n\r\nclass B\r\n{\r\n}\r\n' > "$dir/application/b.php"
     printf 'ALTER TABLE `t` ADD INDEX `i` (`c`), ALGORITHM = INPLACE, LOCK = NONE;\n' > "$dir/migrations/old.sql"
     git -C "$dir" init -q
+    # The tests compare against "master" whatever init.defaultBranch says on this machine.
+    git -C "$dir" symbolic-ref HEAD refs/heads/master
     git -C "$dir" -c user.name=t -c user.email=t@example.invalid add -A
     git -C "$dir" -c user.name=t -c user.email=t@example.invalid commit -qm base
     git -C "$dir" checkout -qb slice

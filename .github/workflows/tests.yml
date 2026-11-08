@@ -77,3 +77,29 @@ jobs:
           name: coverage
           path: coverage/clover.xml
           if-no-files-found: error
+
+  # The hcphp plugin's own tests: its shell scripts against fixtures with known answers, and its
+  # PHP templates linted and run at the floor, because they are copied into applications on 7.4.
+  plugin:
+    name: Plugin (hcphp)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: json, mbstring, pdo, pdo_sqlite, fileinfo
+          coverage: none
+          tools: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Shellcheck
+        run: shellcheck plugins/hcphp/bin/*.sh plugins/hcphp/install.sh plugins/hcphp/tests/run.sh
+
+      - name: Tests
+        run: plugins/hcphp/tests/run.sh
