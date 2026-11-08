@@ -164,6 +164,40 @@ assert_eq "dirty slice: verdict" "FAIL (5)" "$(printf '%s\n' "$out" | tail -1)"
 "$bin/slice-check.sh" --exec "$stub_exec" --base master "$repo" >/dev/null 2>&1
 assert_eq "no test command → exit 2" 2 "$?"
 
+# ---- drift.sh ---------------------------------------------------------------------------------
+
+section drift
+adv="$fixtures/drift/advisories"
+out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/fixed")
+assert_contains "fixed shape → fixed" "ADV-2026-901 fixed" "$out"
+out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/defective")
+assert_contains "defective shape → defective, with the line" "ADV-2026-901 defective — application/core/Thing.php:6:" "$out"
+out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/diverged")
+assert_contains "neither shape → read by hand" "ADV-2026-901 read-by-hand — application/core/Thing.php does not match the fixed shape" "$out"
+out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/absent")
+assert_contains "missing file → read by hand" "ADV-2026-901 read-by-hand — application/core/Thing.php is absent" "$out"
+assert_contains "no markers → read by hand, never fixed" "ADV-2026-902 read-by-hand — the advisory has no markers" "$out"
+"$bin/drift.sh" --advisories "$adv" "$fixtures/drift/fixed" >/dev/null
+assert_eq "anything not fixed → exit 1" 1 "$?"
+out=$("$bin/drift.sh" --advisories "$repo_root/docs/advisories" "$repo_root")
+assert_contains "HCPHP's own advisories hold on HCPHP" "fixed 4, defective 0, read-by-hand 0" "$out"
+for a in "$repo_root"/docs/advisories/*.md; do
+    n=$(grep -cE '^- (defective|fixed): `' "$a")
+    assert_eq "$(basename "$a") has markers" yes "$([ "$n" -ge 2 ] && echo yes || echo "no ($n)")"
+done
+
+# ---- scan.sh ----------------------------------------------------------------------------------
+
+section scan
+out=$("$bin/scan.sh" "$fixtures/scan" 2>&1)
+for item in ECHO-RAW TAG-CONTENT CSRF GET-STATE AUTHZ IDOR LIKE-RAW SQL-INTERP UPLOAD DANGEROUS SHELL SECRET ERROR-LEAK FORMULA COOKIE SESSION-REGEN; do
+    n=$(printf '%s\n' "$out" | sed -n "s/^$item \([0-9][0-9]*\)$/\1/p")
+    assert_eq "scan finds the planted $item" yes "$([ "${n:-0}" -ge 1 ] && echo yes || echo "no (${n:-none})")"
+done
+assert_contains "GET-STATE names the action" "item.php:5: actionSave writes" "$out"
+assert_not_contains "a secret's value is never printed" "hunter2" "$out"
+assert_contains "the secret's file and key are" 'SECRET application/config/secrets.json:2:    "password": "<redacted>"' "$out"
+
 # ---- install.sh and the size budgets ----------------------------------------------------------
 
 section install
@@ -172,16 +206,19 @@ mkdir -p "$app"
 out=$("$plugin/install.sh" --opencode "$app" 2>&1)
 assert_eq "install exits 0" 0 "$?"
 installed="$(cd "$app" && pwd)/.opencode"
-for name in refactor-plan refactor-run; do
+for name in port refactor-plan refactor-run; do
     skill="$installed/skills/hcphp-$name/SKILL.md"
     assert_eq "hcphp-$name installed" yes "$([ -f "$skill" ] && echo yes || echo no)"
     assert_eq "hcphp-$name renamed" "name: hcphp-$name" "$(sed -n 2p "$skill")"
     assert_contains "hcphp-$name points at the plugin root" "The plugin root is \`$installed/hcphp\`." "$(cat "$skill")"
-    assert_not_contains "hcphp-$name has no Claude Code paths" "two directories above" "$(cat "$skill")"
+    assert_not_contains "hcphp-$name has no Claude Code paths" "two directories above this skill's base directory" "$(cat "$skill")"
     assert_not_contains "hcphp-$name has no /hcphp: references" "/hcphp:" "$(cat "$skill")"
 done
 assert_eq "scripts executable" yes "$([ -x "$installed/hcphp/bin/census.sh" ] && echo yes || echo no)"
-assert_eq "advisories copied" yes "$([ -n "$(ls "$installed/hcphp/advisories/"*.md 2>/dev/null)" ] && echo yes || echo no)"
+assert_eq "advisories copied" yes "$([ -n "$(ls "$installed/hcphp/docs/advisories/"*.md 2>/dev/null)" ] && echo yes || echo no)"
+assert_eq "PORTING.md two directories above them" yes "$([ -f "$installed/hcphp/PORTING.md" ] && echo yes || echo no)"
+out=$("$installed/hcphp/bin/drift.sh" "$repo_root" 2>&1 | head -1)
+assert_contains "installed drift.sh finds its advisories" "$installed/hcphp/docs/advisories" "$out"
 mkdir -p "$installed/skills/hcphp-retired" "$installed/skills/other"
 "$plugin/install.sh" --opencode "$app" >/dev/null 2>&1
 assert_eq "a retired hcphp skill is removed" no "$([ -d "$installed/skills/hcphp-retired" ] && echo yes || echo no)"

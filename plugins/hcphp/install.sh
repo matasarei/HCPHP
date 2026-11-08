@@ -7,7 +7,7 @@
 # Claude Code needs none of this: `/plugin install hcphp --marketplace matasarei/HCPHP`.
 #
 # Run it from a checkout of HCPHP: it copies the plugin to <config>/hcphp/ (reference, templates,
-# bin, and HCPHP's docs/advisories for drift.sh), and each skill to <config>/skills/hcphp-<name>/.
+# bin, and HCPHP's docs/advisories and PORTING.md for /hcphp:port), and each skill to <config>/skills/hcphp-<name>/.
 # OpenCode wants a skill's `name:` to match its directory and puts no plugin bin/ on PATH, so the
 # copies get their name prefixed, /hcphp:<skill> references renamed to hcphp-<skill>, and their
 # "Paths." sentences pointed at the absolute plugin root.
@@ -36,8 +36,12 @@ mkdir -p "$root" "$target/skills"
 cp -R "$src/reference" "$src/templates" "$src/bin" "$root/"
 chmod +x "$root"/bin/*.sh
 
+# The same layout as an HCPHP checkout, so "PORTING.md is two directories above the advisories"
+# holds in every install.
 if [ -d "$repo/docs/advisories" ]; then
-    cp -R "$repo/docs/advisories" "$root/advisories"
+    mkdir -p "$root/docs"
+    cp -R "$repo/docs/advisories" "$root/docs/advisories"
+    cp "$repo/PORTING.md" "$root/PORTING.md"
 else
     echo "  (no docs/advisories beside the plugin: drift.sh will need --advisories)"
 fi
