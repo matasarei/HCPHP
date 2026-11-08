@@ -306,7 +306,7 @@ if php_run php -v >/dev/null 2>&1; then
 
     if [ -f "$repo_root/application/lib/vendor/bin/phpunit" ]; then
         out=$(php_run php application/lib/vendor/bin/phpunit --no-configuration --bootstrap tests/bootstrap.php \
-            --fail-on-warning --fail-on-risky plugins/hcphp/tests/php 2>&1)
+            --fail-on-warning --fail-on-risky --disallow-test-output plugins/hcphp/tests/php 2>&1)
         assert_contains "template tests" "OK (" "$out"
         case "$out" in *"OK ("*) ;; *) printf '%s\n' "$out" | tail -20 ;; esac
     else

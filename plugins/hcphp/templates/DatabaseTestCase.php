@@ -112,7 +112,11 @@ abstract class DatabaseTestCase extends TestCase
     protected function rowFromMapper($mapper, string $method, $entity): array
     {
         $reflection = new ReflectionMethod($mapper, $method);
-        $reflection->setAccessible(true);
+
+        // Required on 7.4, a no-op from 8.1, deprecated from 8.5.
+        if (PHP_VERSION_ID < 80100) {
+            $reflection->setAccessible(true);
+        }
 
         return $reflection->invoke($mapper, $entity);
     }
