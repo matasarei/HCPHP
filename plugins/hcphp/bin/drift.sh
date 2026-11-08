@@ -15,7 +15,9 @@
 #                 (or /hcphp:port) reads the code; it is never assumed fixed.
 #
 # Advisories are found in: --advisories <dir>; $HCPHP_ADVISORIES; <plugin root>/docs/advisories
-# (an OpenCode install); the Claude Code marketplace clone; the HCPHP checkout the plugin sits in.
+# (an OpenCode install); the HCPHP checkout the plugin sits in; the Claude Code marketplace clone.
+# The checkout comes before the clone: the clone lags, and an advisory still in a pull request
+# exists only in a checkout. The first line of the output names the directory that was read.
 #
 # Exit 0 when every advisory is fixed, 1 when any is defective or needs reading, 2 on error.
 
@@ -33,8 +35,8 @@ if [ -z "$dir" ]; then
     for candidate in \
         "${HCPHP_ADVISORIES:-}" \
         "$plugin/docs/advisories" \
-        "$HOME/.claude/plugins/marketplaces/hcphp/docs/advisories" \
-        "$plugin/../../docs/advisories"; do
+        "$plugin/../../docs/advisories" \
+        "$HOME/.claude/plugins/marketplaces/hcphp/docs/advisories"; do
         if [ -n "$candidate" ] && [ -d "$candidate" ]; then dir="$candidate"; break; fi
     done
 fi

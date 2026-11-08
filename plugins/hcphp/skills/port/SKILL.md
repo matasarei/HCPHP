@@ -46,6 +46,25 @@ directory `drift.sh` prints on its first line. Read it before the first port of 
 drift.sh .
 ```
 
+The first line of the output names the advisories directory it read. Check it is the one you
+meant. The installed plugin holds only what HCPHP has merged and you have fetched. After a
+merge, `/plugin marketplace update hcphp` brings it up to date (under OpenCode, run
+`install.sh --opencode` again).
+
+**An advisory still in an HCPHP pull request.** The fix is public as soon as its pull request
+is open, so port it then, not after the merge. The advisory exists only on that branch, so
+point `drift.sh` at a checkout of it:
+
+```sh
+git -C <HCPHP checkout> fetch origin
+git -C <HCPHP checkout> switch <the pull request's branch>
+drift.sh --advisories <HCPHP checkout>/docs/advisories .
+```
+
+Port and record it like any other advisory, with `HCPHP #<pull request>, unmerged` in the
+Evidence column. Markers can change in review. After the merge, run `/hcphp:port <ADV-id>`
+again against the released advisory, and update the row.
+
 For each advisory:
 
 - **fixed** → record it (Step 4) with the marker that proved it.
