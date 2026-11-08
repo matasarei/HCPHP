@@ -200,7 +200,9 @@ out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/defective")
 assert_contains "defective shape → defective, with the line" "ADV-2026-901 defective — application/core/Thing.php:6:" "$out"
 out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/diverged")
 assert_contains "neither shape → read by hand" "ADV-2026-901 read-by-hand — application/core/Thing.php does not match the fixed shape" "$out"
-out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/absent")
+# Built here: an application/ with nothing in it is an empty directory, which git does not keep.
+mkdir -p "$scratch/absent/application"
+out=$("$bin/drift.sh" --advisories "$adv" "$scratch/absent")
 assert_contains "missing file → read by hand" "ADV-2026-901 read-by-hand — application/core/Thing.php is absent" "$out"
 assert_contains "no markers → read by hand, never fixed" "ADV-2026-902 read-by-hand — the advisory has no markers" "$out"
 "$bin/drift.sh" --advisories "$adv" "$fixtures/drift/fixed" >/dev/null
