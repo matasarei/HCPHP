@@ -194,6 +194,11 @@ assert_eq "no test command → exit 2" 2 "$?"
 
 section drift
 adv="$fixtures/drift/advisories"
+# Inside an HCPHP checkout, its own docs/advisories wins over an installed marketplace clone,
+# which lags behind: an advisory still in a pull request exists only in the checkout.
+mkdir -p "$scratch/home/.claude/plugins/marketplaces/hcphp/docs/advisories"
+out=$(HOME="$scratch/home" HCPHP_ADVISORIES='' "$bin/drift.sh" "$repo_root" 2>&1 | head -1)
+assert_eq "a checkout reads its own advisories, not the installed clone" "# advisories from $repo_root/docs/advisories" "$out"
 out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/fixed")
 assert_contains "fixed shape → fixed" "ADV-2026-901 fixed" "$out"
 out=$("$bin/drift.sh" --advisories "$adv" "$fixtures/drift/defective")
