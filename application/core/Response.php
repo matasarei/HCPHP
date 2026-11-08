@@ -16,6 +16,7 @@ class Response
     const STATUS_BAD_REQUEST = 400;
     const STATUS_FORBIDDEN = 403;
     const STATUS_NOT_FOUND = 404;
+    const STATUS_METHOD_NOT_ALLOWED = 405;
 
     /**
      * @var string
