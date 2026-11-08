@@ -63,10 +63,12 @@ assert_contains "M proposed" "PROPOSE M" "$out"
 assert_eq "legacy base" 'core\Service' "$(fact "$out" legacy_base)"
 assert_contains "C proposed" "PROPOSE C" "$out"
 assert_eq "inline construction, wiring excluded" 2 "$(fact "$out" inline_construction)"
+assert_eq "static bundle init(Container) is wiring" bundle-init "$(fact "$out" registration)"
 assert_eq "getInstance calls" 1 "$(fact "$out" get_instance_calls)"
 assert_eq "floor from platform pin" 7.4 "$(fact "$out" php_floor)"
-assert_eq "lib classes" 1 "$(fact "$out" lib_classes)"
-assert_eq "named by a test" 0 "$(fact "$out" lib_classes_untested)"
+assert_eq "lib classes" 2 "$(fact "$out" lib_classes)"
+# FooBundle is named only as a namespace in a test: the documented over-count calls it tested.
+assert_eq "a class named anywhere in a test counts" 0 "$(fact "$out" lib_classes_untested)"
 
 out=$("$bin/census.sh" "$repo_root")
 assert_eq "HCPHP itself is lazy" setFactory "$(fact "$out" container_api)"

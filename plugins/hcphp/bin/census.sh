@@ -55,10 +55,13 @@ if [ -f application/core/Container.php ]; then
     fi
 fi
 
+# Where services are wired: Init.php alone, or bundle classes with an init/initialize(Container)
+# method that Init.php calls. Those bundle files are wiring too, and their constructions are not
+# counted against anyone.
+wiring_re='function +(init|initialize) *\( *(\\?core\\)?Container +\$'
+bundle_wiring=$(php_files | grep '^application/lib/' | xargs grep -lE "$wiring_re" 2>/dev/null)
 registration="init"
-if php_files | grep '^application/lib/' | xargs grep -lE 'function +initialize *\( *(\\?core\\)?Container' 2>/dev/null | grep -q .; then
-    registration="bundle-initialize"
-fi
+[ -n "$bundle_wiring" ] && registration="bundle-init"
 
 legacy=""
 for base in Model ModelDynamic Service MapperSQL iMapper; do
@@ -87,7 +90,9 @@ dynamicdb="absent"
 # ---- construction and coupling --------------------------------------------------------------
 
 # Wiring is where construction belongs; it is not counted against anyone.
-not_wiring() { grep -vE '^application/events/Init\.php$'; }
+not_wiring() {
+    grep -vE '^application/events/Init\.php$' | grep -vxF -f <(printf '%s\n' "${bundle_wiring:-/nonexistent}")
+}
 
 construct_re='new +\\?([A-Za-z_][A-Za-z0-9_]*\\)*[A-Za-z0-9_]*(Service|Repository|Mapper|Manager) *\('
 inline_new=$(php_files | not_wiring | count_matches "$construct_re")
@@ -129,6 +134,7 @@ echo "# census of $(pwd)"
 echo "## facts"
 fact container_api "$container_api"
 fact registration "$registration"
+fact wiring_files "$(printf '%s' "$bundle_wiring" | awk 'END { print NR + 1 }')"
 fact legacy_base "${legacy:-none}"
 fact models_files "$models_files"
 fact bundles "$bundles"
