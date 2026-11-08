@@ -138,6 +138,22 @@ mkdir -p "$repo/tests/fixtures" && printf 'DELETE FROM `t`;\n' > "$repo/tests/fi
 out=$("$bin/schema-guard.sh" --base master "$repo")
 assert_contains "git mode: test fixtures are not migrations" "FAIL (2)" "$out"
 
+# No --base and no origin/HEAD (a clone that never set it): the committed change is still
+# compared with the default branch, never with HEAD — that would check only the dirty tree.
+repo=$(new_repo nobase)
+printf 'ALTER TABLE `t` DROP INDEX `i`;\n' > "$repo/migrations/new.sql"
+git -C "$repo" -c user.name=t -c user.email=t@example.invalid add -A
+git -C "$repo" -c user.name=t -c user.email=t@example.invalid commit -qm drop
+out=$("$bin/schema-guard.sh" "$repo" 2>&1)
+assert_contains "no origin/HEAD: a committed DROP is still found" "FAIL (1)" "$out"
+out=$("$bin/slice-check.sh" --exec "$stub_exec" --test true "$repo" 2>&1)
+assert_contains "slice-check, no origin/HEAD: a committed DROP is still found" "FAIL schema" "$out"
+git -C "$repo" branch -qm master trunk
+"$bin/schema-guard.sh" "$repo" >/dev/null 2>&1
+assert_eq "no default branch at all → exit 2, not a PASS" 2 "$?"
+"$bin/slice-check.sh" --exec "$stub_exec" --test true "$repo" >/dev/null 2>&1
+assert_eq "slice-check, no default branch at all → exit 2" 2 "$?"
+
 # ---- slice-check.sh ---------------------------------------------------------------------------
 
 section slice-check

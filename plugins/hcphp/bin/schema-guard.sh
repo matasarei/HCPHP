@@ -3,7 +3,8 @@
 #
 # Usage:
 #   schema-guard.sh [--base <ref>] [application-root]   check what changed since <ref> (default:
-#                                                       the merge base with origin's HEAD branch),
+#                                                       the merge base with origin's HEAD branch,
+#                                                       else master or main; none → exit 2),
 #                                                       committed, staged, unstaged and untracked
 #   schema-guard.sh --files <file>...                   check these files as if each were new
 #
@@ -115,6 +116,16 @@ check_sql() {
 # In diff mode, SQL and configs under a tests/ or fixtures/ directory are test data: they never
 # reach the application's database, and a characterization test may well seed from a .sql file.
 # --files mode checks whatever it is given.
+# default_branch: origin's HEAD branch, else origin's or the local master or main. Empty when none
+# exists: comparing with HEAD instead would check only the uncommitted files and still say PASS.
+default_branch() {
+    local ref
+    ref=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null) && { echo "$ref"; return; }
+    for ref in refs/remotes/origin/master refs/remotes/origin/main refs/heads/master refs/heads/main; do
+        git rev-parse --verify --quiet "$ref^{commit}" >/dev/null && { echo "$ref"; return; }
+    done
+}
+
 explicit=0
 
 check_file() {
@@ -162,8 +173,9 @@ else
     cd "${1:-.}" || exit 2
     git rev-parse --git-dir >/dev/null 2>&1 || { echo "schema-guard: not a git repository" >&2; exit 2; }
     if [ -z "$base" ]; then
-        default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)
-        base=$(git merge-base HEAD "${default:-HEAD}" 2>/dev/null)
+        default=$(default_branch)
+        [ -n "$default" ] || { echo "schema-guard: no default branch (origin/HEAD, master, main); pass --base <ref>" >&2; exit 2; }
+        base=$(git merge-base HEAD "$default" 2>/dev/null)
     fi
     git rev-parse --verify --quiet "$base^{commit}" >/dev/null || { echo "schema-guard: unknown base '$base'" >&2; exit 2; }
     while IFS=$'\t' read -r status file rest; do

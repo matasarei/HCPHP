@@ -7,7 +7,8 @@
 #            its floor version, e.g. 'docker compose exec -T fpm' or
 #            'docker run --rm -v "$PWD":/app -w /app php:7.4-cli'. Empty means the host's php.
 #   --test   the full test command, run through --exec, e.g. 'php application/lib/vendor/bin/phpunit'.
-#   --base   what the slice is compared with (default: the merge base with origin's HEAD branch).
+#   --base   what the slice is compared with (default: the merge base with origin's HEAD branch,
+#            else master or main; none → exit 2).
 #
 # Without --exec/--test it reads exec.prefix and test from .claude/repo-profile.json (needs jq).
 #
@@ -48,9 +49,20 @@ if [ -f "$profile" ] && command -v jq >/dev/null 2>&1; then
 fi
 [ -n "$test_cmd" ] || { echo "slice-check: no test command; pass --test or add one to $profile" >&2; exit 2; }
 
+# default_branch: origin's HEAD branch, else origin's or the local master or main. Empty when none
+# exists: comparing with HEAD instead would check only the uncommitted files and still say PASS.
+default_branch() {
+    local ref
+    ref=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null) && { echo "$ref"; return; }
+    for ref in refs/remotes/origin/master refs/remotes/origin/main refs/heads/master refs/heads/main; do
+        git rev-parse --verify --quiet "$ref^{commit}" >/dev/null && { echo "$ref"; return; }
+    done
+}
+
 if [ -z "$base" ]; then
-    default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)
-    base=$(git merge-base HEAD "${default:-HEAD}" 2>/dev/null)
+    default=$(default_branch)
+    [ -n "$default" ] || { echo "slice-check: no default branch (origin/HEAD, master, main); pass --base <ref>" >&2; exit 2; }
+    base=$(git merge-base HEAD "$default" 2>/dev/null)
 fi
 git rev-parse --verify --quiet "$base^{commit}" >/dev/null || { echo "slice-check: unknown base '$base'" >&2; exit 2; }
 
