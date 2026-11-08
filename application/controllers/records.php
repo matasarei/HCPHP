@@ -3,6 +3,8 @@
 use core\Application;
 use core\Container;
 use core\Controller;
+use core\Csrf;
+use core\Globals;
 use core\Response;
 use core\Url;
 use DynamicDB\Builder\FormBuilder;
@@ -14,6 +16,7 @@ use DynamicDB\Manager\EntityManager;
 use DynamicDB\Mapper\EntityMapper;
 use DynamicDB\Repository\DynamicRepository;
 use DynamicDB\Repository\TableRepository;
+use Html\Form\Form;
 use UserBundle\Service\AuthChecker;
 
 class RecordsController extends Controller
@@ -126,6 +129,16 @@ class RecordsController extends Controller
     {
         if (!$this->authChecker->checkCapability('edit_records')) {
             return new Response('Access denied', Response::STATUS_FORBIDDEN);
+        }
+
+        // A link, an image or a redirect must not be able to delete: only a POST from a page
+        // this application served, carrying its form token.
+        if (!Globals::post()) {
+            return new Response('Method not allowed', Response::STATUS_METHOD_NOT_ALLOWED);
+        }
+
+        if (!Csrf::isValid(Globals::post(Form::KEY_SESSION))) {
+            return new Response('Invalid form token', Response::STATUS_FORBIDDEN);
         }
 
         $entity = $this->repository->get($id);

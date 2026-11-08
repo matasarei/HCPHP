@@ -4,17 +4,22 @@
  * @var Table $table
  */
 
+use core\Csrf;
 use core\Template;
 use DynamicDB\Entity\DynamicEntity;
 use DynamicDB\Entity\File;
 use DynamicDB\Entity\Table;
+use Html\Form\Form;
 
 ?>
 <div class="container mt-5">
     <div class="btn-group" role="group" aria-label="Basic outlined example">
         <a href="/user/" class="btn btn-outline-primary">All items</a>
         <a href="/records/{{escape|$entity->id}}/edit" class="btn btn-outline-secondary">Edit</a>
-        <a href="/records/{{escape|$entity->id}}/delete" class="btn btn-outline-danger">Delete</a>
+        <form method="post" action="/records/{{escape|$entity->id}}/delete/" class="btn-group">
+            <input type="hidden" name="<?= Form::KEY_SESSION; ?>" value="<?= Template::escape(Csrf::getToken()); ?>">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+        </form>
     </div>
 
     <div class="row">

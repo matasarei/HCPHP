@@ -4,10 +4,12 @@
  * @var DynamicEntity[] $records
  */
 
+use core\Csrf;
 use core\Template;
 use DynamicDB\Entity\DynamicEntity;
 use DynamicDB\Entity\Field;
 use DynamicDB\Entity\Table;
+use Html\Form\Form;
 
 ?>
 <table class="table">
@@ -83,7 +85,10 @@ use DynamicDB\Entity\Table;
             </td>
             <td class="btn-group btn-group-sm" role="group" aria-label="actions">
                 <a href="/records/{{escape|$record->id}}/edit/" class="btn btn-outline-secondary">{{lang|'Edit'}}</a>
-                <a href="/records/{{escape|$record->id}}/delete/" class="btn btn-outline-danger">{{lang|'Delete'}}</a>
+                <form method="post" action="/records/{{escape|$record->id}}/delete/" class="btn-group btn-group-sm">
+                    <input type="hidden" name="<?= Form::KEY_SESSION; ?>" value="<?= Template::escape(Csrf::getToken()); ?>">
+                    <button type="submit" class="btn btn-outline-danger">{{lang|'Delete'}}</button>
+                </form>
             </td>
         </tr>
     <?php endforeach; ?>
