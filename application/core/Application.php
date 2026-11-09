@@ -133,7 +133,10 @@ final class Application
         for ($i = count($chain) - 1; $i >= 0; $i--) {
             $address = $chain[$i];
 
-            if (filter_var($address, FILTER_VALIDATE_IP) && !in_array($address, $trustedProxies, true)) {
+            $isClient = filter_var($address, FILTER_VALIDATE_IP)
+                && !in_array($address, $trustedProxies, true);
+
+            if ($isClient) {
                 return $address;
             }
         }
