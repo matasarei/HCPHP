@@ -4,5 +4,6 @@
     "role": "user",
     "loginTime": 2592000,
     "lang": "en",
-    "timezone": "Europe/Kyiv"
+    "timezone": "Europe/Kyiv",
+    "trustedProxies": []
 }
