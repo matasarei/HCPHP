@@ -220,7 +220,9 @@ final class Path extends MagicObject
             return preg_match('@image\/@', finfo_file($info, (string)$this));
         }
 
-        return preg_match('/.(png|jpeg|jpg|gif|bmp|webp|svg)$/i', basename((string)$this));
+        // A name, not the content: never the check that lets a file in. The dot is escaped --
+        // unescaped, any character stood in for it, so "a.phpng" counted as a png.
+        return preg_match('/\.(png|jpeg|jpg|gif|bmp|webp|svg)$/i', basename((string)$this));
     }
 
     /**

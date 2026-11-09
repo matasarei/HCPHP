@@ -157,6 +157,10 @@ class PathFilesystemTest extends TestCase
             'svg' => ['a.svg', true],
             'pdf' => ['a.pdf', false],
             'no extension' => ['a', false],
+            // The dot before the extension was unescaped, so any character stood in for it.
+            'no dot' => ['apng', false],
+            'an extension that ends in png' => ['a.phpng', false],
+            'an extension that ends in svg' => ['a.xsvg', false],
         ];
     }
 

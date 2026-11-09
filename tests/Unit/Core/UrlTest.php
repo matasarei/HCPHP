@@ -199,6 +199,9 @@ class UrlTest extends TestCase
             'pdf' => ['a/b.pdf', false],
             'no extension' => ['a/b', false],
             'php' => ['a/b.php', false],
+            // The dot before the extension was unescaped, so any character stood in for it.
+            'no dot' => ['a/bpng', false],
+            'an extension that ends in png' => ['a/b.phpng', false],
         ];
     }
 

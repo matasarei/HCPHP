@@ -259,7 +259,9 @@ class Url extends MagicObject
      */
     public function isImage()
     {
-        return preg_match('/.(png|jpeg|jpg|gif|bmp|webp|svg)$/i', $this->path);
+        // A name, not the content: never the check that lets a file in. The dot is escaped --
+        // unescaped, any character stood in for it, so "a.phpng" counted as a png.
+        return preg_match('/\.(png|jpeg|jpg|gif|bmp|webp|svg)$/i', $this->path);
     }
 
     public function getFileName(): ?string
