@@ -34,6 +34,39 @@ final class Language
      */
     private $strings = [];
 
+    /**
+     * A language code names a file under application/lang, so it is a code and nothing else:
+     * "en", "uk", "pt-BR", "zh_Hant". No dot, no slash, no backslash -- Path turns "\" into "/".
+     */
+    public static function isValidCode(string $languageCode): bool
+    {
+        return preg_match('/^[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})?$/', $languageCode) === 1;
+    }
+
+    public static function exists(string $languageCode): bool
+    {
+        return self::isValidCode($languageCode) && is_readable(self::path($languageCode));
+    }
+
+    /**
+     * The language a request asked for (?l=), when there is such a language; otherwise the
+     * fallback. The request must not be able to name a file, nor to make every page throw by
+     * asking for a language that is not installed.
+     *
+     * @param mixed $requested
+     */
+    public static function chooseCode($requested, string $fallback): string
+    {
+        if (!is_string($requested)) {
+            return $fallback;
+        }
+
+        // A link may carry a trailing slash (?l=en/); start() has always accepted it.
+        $requested = rtrim($requested, '/');
+
+        return self::exists($requested) ? $requested : $fallback;
+    }
+
     public static function setDefaultLanguageCode(string $languageCode)
     {
         self::$defaultLanguageCode = $languageCode;
@@ -106,10 +139,20 @@ final class Language
         return self::$instances[$languageCode];
     }
 
+    private static function path(string $languageCode): Path
+    {
+        return new Path(sprintf('application/lang/%s.json', $languageCode));
+    }
+
     private function __construct(string $languageCode)
     {
+        // The same exception as a missing language, which callers already handle.
+        if (!self::isValidCode($languageCode)) {
+            throw new UnexpectedValueException(sprintf('Not a language code: "%s"', $languageCode));
+        }
+
         $this->languageCode = $languageCode;
-        $path = new Path(sprintf('application/lang/%s.json', $this->languageCode));
+        $path = self::path($languageCode);
 
         if (is_readable($path)) {
             $strings = json_decode(file_get_contents($path), true);
