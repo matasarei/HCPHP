@@ -47,8 +47,10 @@ class Url extends MagicObject
      */
     public function __construct($path = '', array $params = [], ?string $anchor = null)
     {
+        $isCurrentRequest = $path === true;
+
         // Get current path.
-        if ($path === true) {
+        if ($isCurrentRequest) {
             // Current anchor is not available at server side.
             $request = Application::getCurrentPath(); // no anchor here.
             $path = ltrim((string)parse_url($request, PHP_URL_PATH), '/\\');
@@ -59,7 +61,10 @@ class Url extends MagicObject
             $path = ltrim((string)$path, '/\\');
         }
 
-        $url = filter_var($path, FILTER_VALIDATE_URL);
+        // The current request is always on this site. Its path is whatever the client asked for,
+        // so a request for /http://evil.example:80/ must stay a path here: parsed as a URL, it
+        // made Url(true) point off-site, and a "back to where you were" redirect with it.
+        $url = $isCurrentRequest ? false : filter_var($path, FILTER_VALIDATE_URL);
 
         if ($url) {
             $this->scheme = parse_url($url, PHP_URL_SCHEME);
