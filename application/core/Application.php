@@ -99,24 +99,46 @@ final class Application
         return self::$mode;
     }
 
-    static function getRemoteIp(): string
+    /**
+     * The address the request came from: the connection's own address, never a header the
+     * client writes. Client-IP, X-Forwarded-For and Forwarded used to come first, so any client
+     * could claim any address and pass an IP allow-list built on this.
+     *
+     * Only when the connection comes from a proxy listed in default.json "trustedProxies" is
+     * X-Forwarded-For read, and right to left, skipping the trusted proxies: each proxy appends
+     * the address it saw, while everything to the left of that is whatever the client sent.
+     *
+     * @param string[]|null $trustedProxies null reads default.json
+     */
+    static function getRemoteIp(?array $trustedProxies = null): string
     {
-        $sources = [
-            'HTTP_CLIENT_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_FORWARDED',
-            'HTTP_FORWARDED_FOR',
-            'HTTP_FORWARDED',
-            'REMOTE_ADDR',
-        ];
+        $remote = (string)($_SERVER['REMOTE_ADDR'] ?? '');
 
-        foreach ($sources as $source) {
-            if (getenv($source)) {
-                return getenv($source);
+        // A command-line run has no connection.
+        if ($remote === '') {
+            return '127.0.0.1';
+        }
+
+        if ($trustedProxies === null) {
+            $config = new Config('default', ['trustedProxies' => []]);
+            $trustedProxies = (array)$config->get('trustedProxies');
+        }
+
+        if (!in_array($remote, $trustedProxies, true)) {
+            return $remote;
+        }
+
+        $chain = array_map('trim', explode(',', (string)($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')));
+
+        for ($i = count($chain) - 1; $i >= 0; $i--) {
+            $address = $chain[$i];
+
+            if (filter_var($address, FILTER_VALIDATE_IP) && !in_array($address, $trustedProxies, true)) {
+                return $address;
             }
         }
 
-        return '127.0.0.1';
+        return $remote;
     }
 
     /**
