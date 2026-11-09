@@ -550,8 +550,9 @@ class DatabaseSQL implements DatabaseInterface
     {
         foreach ($conditions as $name => $value) {
             if (is_array($value)) {
-                foreach($value as $key => $val) {
-                    $sth->bindValue(sprintf(':%s%s', $name, $key), $val);
+                // By position, matching prepareConditions().
+                foreach (array_values($value) as $position => $val) {
+                    $sth->bindValue(sprintf(':%s%d', $name, $position), $val);
                 }
             } elseif ($value instanceof Like) {
                 $sth->bindValue(':' . $name, $value->getPattern());
@@ -577,18 +578,31 @@ class DatabaseSQL implements DatabaseInterface
         $prepared = [];
 
         foreach ($conditions as $name => $value) {
+            // The column name is written into the SQL text and into the placeholder names, so it
+            // is an identifier and nothing else. A name that is not \w+ never produced a valid
+            // placeholder, so this refuses nothing that worked.
+            if (!is_string($name) || !preg_match('/^\w+$/', $name)) {
+                throw new InvalidArgumentException(
+                    sprintf('A condition column must be a plain identifier, got "%s"', $name)
+                );
+            }
+
             if (is_array($value)) {
 
                 $inConditions = [];
 
-                foreach ($value as $key => $val) {
+                // Placeholders are numbered by position, never named after the array's keys:
+                // the keys can come from a request (a JSON object decoded as a list of ids), and
+                // they were written into the SQL text. PDO's MySQL driver emulates prepares by
+                // default, so `{"0": 1, "0) OR (1=1": 1}` matched every row.
+                foreach (array_values($value) as $position => $val) {
                     if ($val instanceof Like) {
                         throw new InvalidArgumentException(
                             sprintf('LIKE is not supported inside an IN condition ("%s")', $name)
                         );
                     }
 
-                    $inConditions[] = sprintf(':%s%s', $name, $key);
+                    $inConditions[] = sprintf(':%s%d', $name, $position);
                 }
 
                 $prepared[] = sprintf('%s IN (%s)', $name, implode(', ', $inConditions));
