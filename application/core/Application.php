@@ -312,10 +312,11 @@ final class Application
             }
         }
 
-        Language::setDefaultLanguageCode(rtrim(
-            empty($_REQUEST['l']) ? $config->get('lang') : $_REQUEST['l'],
-            '/'
-        ));
+        // ?l= used to become part of a file path (application/lang/<l>.json): ?l=../config/database
+        // loaded that file as the page's strings, and ?l=zz made every page throw.
+        Language::setDefaultLanguageCode(
+            Language::chooseCode($_REQUEST['l'] ?? null, (string)$config->get('lang'))
+        );
 
         if (!self::findRoute($url)) {
             self::autoRoute($request);
