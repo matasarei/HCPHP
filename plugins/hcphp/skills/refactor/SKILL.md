@@ -26,7 +26,7 @@ Under Claude Code `bin/` is on `PATH`, so its scripts run by name.
 | `--implement <plan path> --slice <n>` — that slice only, then stop | running | `run.md` |
 | nothing, or `--implement` with no path | — | ask what to plan, or for the plan. Never guess, never pick up a file on your own |
 
-**Read only the file for your mode**, beside this one, and follow it from its top. Planning
+**Read only the file for your mode**, beside this file, and follow it from its top. Planning
 reads `run.md` only when the person approves the plan and chooses to run it now (`plan.md`,
 Step 10). Running never reads `plan.md`: the plan file it is given holds everything it needs.
 
