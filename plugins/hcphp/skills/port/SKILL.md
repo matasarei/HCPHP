@@ -1,6 +1,6 @@
 ---
 name: port
-description: Inside an application built on HCPHP, carry HCPHP's security fixes across and find the application's own holes — check every HCPHP advisory by its markers (drift.sh), port what is missing by the PORTING.md procedure, scan the application (scan.sh) and settle every candidate by reading and a local probe, fix each finding in its own pull request, test-first, and record the status in the application's own repository. A finding that HCPHP shares goes back to HCPHP as a fix and a new generic advisory. Run it before /hcphp:refactor-plan touches an area.
+description: Inside an application built on HCPHP, carry HCPHP's security fixes across and find the application's own holes — check every HCPHP advisory by its markers (drift.sh), port what is missing by the PORTING.md procedure, scan the application (scan.sh) and settle every candidate by reading and a local probe, fix each finding in its own pull request, test-first, and record the status in the application's own repository. A finding that HCPHP shares goes back to HCPHP as a fix and a new generic advisory. Run it before /hcphp:refactor touches an area.
 argument-hint: "[ADV-id | <HCPHP commit> | --scan | --backport <application path>]"
 disable-model-invocation: true
 ---

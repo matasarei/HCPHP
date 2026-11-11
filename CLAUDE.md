@@ -19,7 +19,7 @@ update an application built on this framework, follow that file rather than impr
 
 **Skills for those applications ship from here**, as the `hcphp` plugin in `plugins/hcphp/` —
 this repository is its marketplace. `/hcphp:port` carries HCPHP's fixes into an application and
-scans it for its own holes; `/hcphp:refactor-plan` and `/hcphp:refactor-run` refactor it toward
+scans it for its own holes; `/hcphp:refactor` plans, then runs, a refactoring of it toward
 single-responsibility services and constructor injection without changing behaviour or schema.
 The plugin is tooling, not foundation: nothing under `plugins/` is copied into an application.
 

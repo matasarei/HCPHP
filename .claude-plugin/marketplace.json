@@ -8,7 +8,7 @@
     {
       "name": "hcphp",
       "source": "./plugins/hcphp",
-      "description": "Skills for applications built on the HCPHP foundation: /hcphp:port (carry HCPHP's fixes into an application, scan it for its own security holes, and track the result in that application), /hcphp:refactor-plan (measure the application and plan a behaviour-preserving refactoring toward single-responsibility services and constructor injection) and /hcphp:refactor-run (carry the approved plan out one slice per pull request, with characterization tests, mutation checks and running-app verification)."
+      "description": "Skills for applications built on the HCPHP foundation: /hcphp:port (carry HCPHP's fixes into an application, scan it for its own security holes, and track the result in that application) and /hcphp:refactor (measure the application and plan a behaviour-preserving refactoring toward single-responsibility services and constructor injection, then carry the approved plan out one slice per pull request, with characterization tests, mutation checks and running-app verification)."
     }
   ]
 }

@@ -1,4 +1,4 @@
-# Slice recipes — what `/hcphp:refactor-run` executes, one per pull request
+# Slice recipes — what `/hcphp:refactor --implement` executes, one per pull request
 
 Load **only the recipe the slice names**. Each one is: when it applies → what it must not do →
 steps → the checks that must all say yes → the commit. A step that cannot be done as written is
