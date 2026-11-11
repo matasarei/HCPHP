@@ -1,30 +1,21 @@
----
-name: refactor-run
-description: Carry out an approved /hcphp:refactor-plan, one slice per pull request, unattended — characterize, move verbatim, mutation-check every new test, run slice-check.sh, verify risky slices against the running app, review the diff in a fresh context, commit with a Verified section, open the pull request, tick the slice, continue. Resumes at the first unticked slice. Stops only for what needs a person, never changes behaviour or schema beyond an online index, and never merges.
-argument-hint: "<plan path> [--slice <n>]"
-disable-model-invocation: true
----
+# Running — one slice, proven, then the next
 
-# /hcphp:refactor-run — one slice, proven, then the next
-
-Runs the plan `/hcphp:refactor-plan` wrote and a person approved. Every slice is a pull request
-that changes structure and **nothing else**: the same pages render the same bytes, the same
-queries return the same rows, the same writes store the same columns.
+`/hcphp:refactor --implement <plan>` reads this file after `SKILL.md`, and so does planning
+when the person chose to run now. It runs a plan that `plan.md` wrote and a person approved.
+Every slice is a pull request that changes structure and **nothing else**: the same pages render
+the same bytes, the same queries return the same rows, the same writes store the same columns.
 
 **Paths.** The plugin root is two directories above this skill's base directory.
 `reference/`, `templates/` and `bin/` are relative to it.
 Under Claude Code `bin/` is on `PATH`, so its scripts run by name.
 
-## Arguments
-
-- **A plan path** — runs every unticked slice in order, starting at the first.
-- `--slice <n>` — runs that slice only, then stops.
-- **Nothing** — ask for the plan. Never pick up a file on your own.
+Every unticked slice runs in order, from the first. With `--slice <n>`, that slice only, then
+stop.
 
 ## Before the first slice
 
 1. Read the plan. **`Status:` must say `approved`.** Anything else → stop: "the plan is not
-   approved; run /hcphp:refactor-plan to finish it".
+   approved; run /hcphp:refactor <area> to finish it".
 2. The working tree must be clean. Someone else's uncommitted work → stop and ask.
 3. Know the commands: `exec.prefix` and `test` from `.claude/repo-profile.json`, or the plan's
    Decisions. Missing → stop and ask; never guess how the suite runs.

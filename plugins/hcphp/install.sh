@@ -9,8 +9,9 @@
 # Run it from a checkout of HCPHP: it copies the plugin to <config>/hcphp/ (reference, templates,
 # bin, and HCPHP's docs/advisories and PORTING.md for /hcphp:port), and each skill to <config>/skills/hcphp-<name>/.
 # OpenCode wants a skill's `name:` to match its directory and puts no plugin bin/ on PATH, so the
-# copies get their name prefixed, /hcphp:<skill> references renamed to hcphp-<skill>, and their
-# "Paths." sentences pointed at the absolute plugin root.
+# copies get their name prefixed, /hcphp:<skill> references renamed to hcphp-<skill>, their
+# "Paths." sentences pointed at the absolute plugin root, and "beside this file" pointed at the
+# skill's own directory — in every markdown file of the skill, not only SKILL.md.
 # Re-running replaces what an earlier run installed; nothing outside hcphp/ and hcphp-* is touched.
 
 set -eu
@@ -18,7 +19,7 @@ set -eu
 src="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$src/../.." && pwd)"
 
-[ "${1:-}" = "--opencode" ] || { sed -n '2,13p' "$0" >&2; exit 2; }
+[ "${1:-}" = "--opencode" ] || { sed -n '2,15p' "$0" >&2; exit 2; }
 
 if [ -n "${2:-}" ]; then
     [ -d "$2" ] || { echo "install: no such directory: $2" >&2; exit 2; }
@@ -60,13 +61,18 @@ for dir in "$src"/skills/*/; do
     dest="$target/skills/hcphp-$name"
     rm -rf "${dest:?}"
     cp -R "$dir" "$dest"
-    # Portable in-place edit: write to a temporary file and move it back.
-    sed -e "s|^name: $name\$|name: hcphp-$name|" \
-        -e "s|/hcphp:\([a-z-]*\)|hcphp-\1|g" \
-        -e "s|The plugin root is two directories above this skill's base directory.|The plugin root is \`$root\`.|" \
-        -e "s|^Under Claude Code \`bin/\` is on \`PATH\`, so its scripts run by name.\$|Call the scripts by their full path: \`$root/bin/<script>\`.|" \
-        "$dest/SKILL.md" > "$dest/SKILL.md.tmp"
-    mv "$dest/SKILL.md.tmp" "$dest/SKILL.md"
+    # Every markdown file in the skill, not only SKILL.md: a skill with modes keeps each mode in
+    # its own file beside SKILL.md, read only when that mode runs.
+    for file in "$dest"/*.md; do
+        # Portable in-place edit: write to a temporary file and move it back.
+        sed -e "s|^name: $name\$|name: hcphp-$name|" \
+            -e "s|/hcphp:\([a-z-]*\)|hcphp-\1|g" \
+            -e "s|The plugin root is two directories above this skill's base directory.|The plugin root is \`$root\`.|" \
+            -e "s|^Under Claude Code \`bin/\` is on \`PATH\`, so its scripts run by name.\$|Call the scripts by their full path: \`$root/bin/<script>\`.|" \
+            -e "s|beside this file|in \`$dest\`|g" \
+            "$file" > "$file.tmp"
+        mv "$file.tmp" "$file"
+    done
     echo "  hcphp-$name"
 done
 

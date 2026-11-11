@@ -1,30 +1,17 @@
----
-name: refactor-plan
-description: Plan a behaviour-preserving refactoring of an application built on HCPHP — measure it with census.sh, check it against HCPHP's security advisories, choose the playbook (move models into bundles, retire the legacy base classes, drain god-classes behind facades, constructor injection), and cut the work into one-pull-request slices that /hcphp:refactor-run executes. Offers one second opinion on the plan from another agent, then stops for approval. Writes the plan only; changes no code.
-argument-hint: "<area | class | \"whole app\">"
-disable-model-invocation: true
----
+# Planning — measure, decide, slice, then stop for approval
 
-# /hcphp:refactor-plan — measure, decide, slice, then stop for approval
-
-The method comes from a production HCPHP copy that drained its god-classes over a year: pin
-behaviour first, move code verbatim, inject collaborators through the constructor, hold the
-architecture with ratchet tests, verify against the running app. It worked, and it was slow and
-careful; ~30 bugs it caught passed a green suite. This skill does the careful part — the plan —
-and leaves the mechanical part to `/hcphp:refactor-run`.
+`/hcphp:refactor <area>` reads this file after `SKILL.md`. The method comes from a production
+HCPHP copy that drained its god-classes over a year: pin behaviour first, move code verbatim,
+inject collaborators through the constructor, hold the architecture with ratchet tests, verify
+against the running app. It worked, and it was slow and careful; ~30 bugs it caught passed a
+green suite. This file is the careful part — the plan. `run.md` is the mechanical part.
 
 **Paths.** The plugin root is two directories above this skill's base directory.
 `reference/`, `templates/` and `bin/` are relative to it.
 Under Claude Code `bin/` is on `PATH`, so its scripts run by name.
 
-**It writes the plan file and nothing else.** No code, no tests, no commits.
-
-## Arguments
-
-- **An area** — a bundle, a model family, a controller, a directory: `/hcphp:refactor-plan rating`.
-- **A class** — `/hcphp:refactor-plan RatingLogService`.
-- **`whole app`** — the census picks where to start; the plan covers the first arc only.
-- **Nothing** — ask what to plan. Never guess.
+**Until the plan is approved and the run starts, it writes the plan file and nothing else.** No
+code, no tests, no commits.
 
 ## Step 1 — Where you are
 
@@ -178,15 +165,25 @@ Write the answers into the plan's Decisions, `[answered]`, in the words given. O
 `**Status:** approved <date> by <who>`. With no answer, take your recommendations, tag them
 `[assumed]`, and leave the status `draft` — **an unapproved plan is never run.**
 
-Then hand off: the plan's absolute path, its slice list, and
+## Step 10 — Run now, or later
+
+Only on approval. Ask **once**: run the slices now, in this session, or later. Say in the
+question that a long plan, or one meant for a local model, runs better later in a fresh session:
+the run needs none of the planning context, and re-reads the plan from disk at every slice.
+
+- **Now** → read `run.md` beside this file and follow it from "Before the first slice". Its
+  checks apply as written; a working tree that is not clean stops the run, as it would later.
+- **Later**, or no answer → hand off: the plan's absolute path, its slice list, and
 
 ```
-/hcphp:refactor-run <plan path>
+/hcphp:refactor --implement <absolute plan path>
 ```
+
+A plan left `draft` is never offered the run; hand off with the questions still open instead.
 
 ## Rules
 
-- **Plan only.** The plan file is the only thing written.
+- **Plan only, until the run.** The plan file is the only thing written.
 - **Facts from scripts, quoted.** No number in the plan comes from reading and estimating.
 - **Behaviour-preserving by construction.** Fixes are `/hcphp:port` or a separate task, never a
   slice. Schema changes beyond an online index are never a slice.

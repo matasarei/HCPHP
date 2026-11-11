@@ -250,22 +250,32 @@ mkdir -p "$app"
 out=$("$plugin/install.sh" --opencode "$app" 2>&1)
 assert_eq "install exits 0" 0 "$?"
 installed="$(cd "$app" && pwd)/.opencode"
-for name in port refactor-plan refactor-run; do
+for name in port refactor; do
     skill="$installed/skills/hcphp-$name/SKILL.md"
     assert_eq "hcphp-$name installed" yes "$([ -f "$skill" ] && echo yes || echo no)"
     assert_eq "hcphp-$name renamed" "name: hcphp-$name" "$(sed -n 2p "$skill")"
-    assert_contains "hcphp-$name points at the plugin root" "The plugin root is \`$installed/hcphp\`." "$(cat "$skill")"
-    assert_not_contains "hcphp-$name has no Claude Code paths" "two directories above this skill's base directory" "$(cat "$skill")"
-    assert_not_contains "hcphp-$name has no /hcphp: references" "/hcphp:" "$(cat "$skill")"
 done
+# A skill's mode files are read beside its SKILL.md, so each one gets the same rewrite.
+for mode in plan run; do
+    assert_eq "hcphp-refactor $mode.md installed" yes "$([ -f "$installed/skills/hcphp-refactor/$mode.md" ] && echo yes || echo no)"
+done
+for file in "$installed"/skills/hcphp-*/*.md; do
+    label="$(basename "$(dirname "$file")")/$(basename "$file")"
+    assert_contains "$label points at the plugin root" "The plugin root is \`$installed/hcphp\`." "$(cat "$file")"
+    assert_not_contains "$label has no Claude Code paths" "two directories above this skill's base directory" "$(cat "$file")"
+    assert_not_contains "$label has no /hcphp: references" "/hcphp:" "$(cat "$file")"
+    assert_not_contains "$label names no file \"beside\" itself" "beside this file" "$(cat "$file")"
+done
+assert_contains "the router names where its mode files are" "in \`$installed/skills/hcphp-refactor\`" "$(cat "$installed/skills/hcphp-refactor/SKILL.md")"
 assert_eq "scripts executable" yes "$([ -x "$installed/hcphp/bin/census.sh" ] && echo yes || echo no)"
 assert_eq "advisories copied" yes "$([ -n "$(ls "$installed/hcphp/docs/advisories/"*.md 2>/dev/null)" ] && echo yes || echo no)"
 assert_eq "PORTING.md two directories above them" yes "$([ -f "$installed/hcphp/PORTING.md" ] && echo yes || echo no)"
 out=$("$installed/hcphp/bin/drift.sh" "$repo_root" 2>&1 | head -1)
 assert_contains "installed drift.sh finds its advisories" "$installed/hcphp/docs/advisories" "$out"
-mkdir -p "$installed/skills/hcphp-retired" "$installed/skills/other"
+mkdir -p "$installed/skills/hcphp-retired" "$installed/skills/hcphp-refactor-plan" "$installed/skills/other"
 "$plugin/install.sh" --opencode "$app" >/dev/null 2>&1
 assert_eq "a retired hcphp skill is removed" no "$([ -d "$installed/skills/hcphp-retired" ] && echo yes || echo no)"
+assert_eq "the old refactor-plan install is removed" no "$([ -d "$installed/skills/hcphp-refactor-plan" ] && echo yes || echo no)"
 assert_eq "someone else's skill is kept" yes "$([ -d "$installed/skills/other" ] && echo yes || echo no)"
 "$plugin/install.sh" >/dev/null 2>&1
 assert_eq "no --opencode → exit 2" 2 "$?"
@@ -276,9 +286,9 @@ for f in "$plugin"/reference/*.md; do
     lines=$(awk 'END { print NR }' "$f")
     assert_eq "$(basename "$f") ≤ 200 lines" yes "$([ "$lines" -le 200 ] && echo yes || echo "no ($lines)")"
 done
-for f in "$plugin"/skills/*/SKILL.md; do
+for f in "$plugin"/skills/*/*.md; do
     lines=$(awk 'END { print NR }' "$f")
-    assert_eq "$(basename "$(dirname "$f")") SKILL.md ≤ 250 lines" yes "$([ "$lines" -le 250 ] && echo yes || echo "no ($lines)")"
+    assert_eq "$(basename "$(dirname "$f")") $(basename "$f") ≤ 250 lines" yes "$([ "$lines" -le 250 ] && echo yes || echo "no ($lines)")"
 done
 
 # ---- PHP templates ----------------------------------------------------------------------------

@@ -37,8 +37,8 @@ Other findings: <none | "run /hcphp:port --scan first">.
 ## Slices
 
 One pull request each, in order. Each names its recipe (`reference/slice-recipes.md`), its
-risk class and the verification it owes. `refactor-run` ticks a slice when its pull request is
-open, with the link.
+risk class and the verification it owes. `/hcphp:refactor --implement` ticks a slice when its
+pull request is open, with the link.
 
 - [ ] **1. <verb-first title>** — recipe <S0>, <safe> · verify: <suite, mutation> · blocked by: <none>
 - [ ] **2. <verb-first title>** — recipe <S1>, <risky> · verify: <suite, mutation, sweep of /rating/list/, /rating/export/> · blocked by: <1>
