@@ -24,8 +24,8 @@ what is absent. Everything below follows from that.
 ## One slice per session, one recipe loaded
 
 - The run (`/hcphp:refactor --implement`) loads `SKILL.md` and `run.md`, the plan's next
-  unticked slice, and **that slice's recipe only**. Not the whole of `slice-recipes.md`, not the trap catalog in full — the sections the
-  recipe cites.
+  unticked slice, and **that slice's recipe only**. Not the whole of `slice-recipes.md`, not
+  the trap catalog in full — the sections the recipe cites.
 - A slice is sized so the files it touches fit in context with room to spare: one class moved,
   one responsibility extracted, one family's consumers repointed. A slice that needs more is
   split in the plan, by the planning model, before it runs.
