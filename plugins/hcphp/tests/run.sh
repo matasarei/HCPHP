@@ -279,6 +279,15 @@ assert_eq "the old refactor-plan install is removed" no "$([ -d "$installed/skil
 assert_eq "someone else's skill is kept" yes "$([ -d "$installed/skills/other" ] && echo yes || echo no)"
 "$plugin/install.sh" >/dev/null 2>&1
 assert_eq "no --opencode → exit 2" 2 "$?"
+# The install path goes into sed replacements: |, & and \ in it must come out as written.
+odd="$scratch/odd|app&dir\\x"
+mkdir -p "$odd"
+"$plugin/install.sh" --opencode "$odd" >/dev/null 2>&1
+assert_eq "install into an odd path exits 0" 0 "$?"
+odd_installed="$(cd "$odd" && pwd)/.opencode"
+odd_skill="$(cat "$odd_installed/skills/hcphp-refactor/SKILL.md" 2>/dev/null)"
+assert_contains "an odd path is written as it is: plugin root" "The plugin root is \`$odd_installed/hcphp\`." "$odd_skill"
+assert_contains "an odd path is written as it is: skill directory" "in \`$odd_installed/skills/hcphp-refactor\`" "$odd_skill"
 
 # A small model reads a skill and its references beside the code; reference/small-model.md.
 section budgets
