@@ -56,9 +56,14 @@ for installed in "$target"/skills/hcphp-*/; do
     [ -d "$src/skills/${name#hcphp-}" ] || rm -rf "${target:?}/skills/${name:?}"
 done
 
+# A path goes into a sed replacement below, where \, & and the | delimiter are not literal.
+sed_literal() { printf '%s' "$1" | sed -e 's/[\\|&]/\\&/g'; }
+root_literal="$(sed_literal "$root")"
+
 for dir in "$src"/skills/*/; do
     name="$(basename "$dir")"
     dest="$target/skills/hcphp-$name"
+    dest_literal="$(sed_literal "$dest")"
     rm -rf "${dest:?}"
     cp -R "$dir" "$dest"
     # Every markdown file in the skill, not only SKILL.md: a skill with modes keeps each mode in
@@ -67,9 +72,9 @@ for dir in "$src"/skills/*/; do
         # Portable in-place edit: write to a temporary file and move it back.
         sed -e "s|^name: $name\$|name: hcphp-$name|" \
             -e "s|/hcphp:\([a-z-]*\)|hcphp-\1|g" \
-            -e "s|The plugin root is two directories above this skill's base directory.|The plugin root is \`$root\`.|" \
-            -e "s|^Under Claude Code \`bin/\` is on \`PATH\`, so its scripts run by name.\$|Call the scripts by their full path: \`$root/bin/<script>\`.|" \
-            -e "s|beside this file|in \`$dest\`|g" \
+            -e "s|The plugin root is two directories above this skill's base directory.|The plugin root is \`$root_literal\`.|" \
+            -e "s|^Under Claude Code \`bin/\` is on \`PATH\`, so its scripts run by name.\$|Call the scripts by their full path: \`$root_literal/bin/<script>\`.|" \
+            -e "s|beside this file|in \`$dest_literal\`|g" \
             "$file" > "$file.tmp"
         mv "$file.tmp" "$file"
     done
